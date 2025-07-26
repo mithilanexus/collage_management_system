@@ -1,5 +1,6 @@
 export const dynamic = "force-static";
 
+import jwt from "jsonwebtoken";
 import { comparePassword } from "@/lib/AuthHandler";
 import { UserModel } from "@/models/user/User.model";
 
@@ -33,6 +34,15 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+    const token = jwt.sign({ gmail: user.email }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+    user.verificationToken = token;
+    delete user.password;
+    delete user._id;
+    user.verified = true;
+    await user.save();
+
     return NextResponse.json({
       success: true,
       message: "Login successful",
