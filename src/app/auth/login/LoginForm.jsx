@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+
 import Link from "next/link";
 import {
   Card,
@@ -15,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const LoginForm = () => {
   const router = useRouter();
@@ -76,11 +78,6 @@ const LoginForm = () => {
     setIsLoading(true);
 
     try {
-      console.log("Login data:", {
-        email: formData.email,
-        password: formData.password,
-        rememberMe: formData.rememberMe,
-      });
       const res = await fetch("http://localhost:3000/api/auth/login", {
         method: "POST",
         headers: {
@@ -92,6 +89,36 @@ const LoginForm = () => {
       console.log(data);
       if (data.success) {
         router.push("/");
+        toast("Login successful", {
+          description: "You are now logged in",
+          closeButton: true,
+          theme: "dark",
+          position: "top-right",
+          className: "!bg-green-200 text-white",
+          icon: "✅",
+          iconTheme: {
+            primary: "white",
+            secondary: "green",
+          },
+        });
+      } else {
+        toast("Login failed", {
+          description: "Invalid credentials",
+          closeButton: true,
+          theme: "dark",
+          position: "top-right",
+          duration: 3000,
+          style: {
+            "--toastBackground": "red",
+            "--toastColor": "white",
+          },
+          className: "!bg-red-200 text-white",
+          icon: "❌",
+          iconTheme: {
+            primary: "white",
+            secondary: "red",
+          },
+        });
       }
     } catch (error) {
       console.error("Login error:", error);

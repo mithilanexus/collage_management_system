@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const RegisterForm = () => {
   const router = useRouter();
@@ -108,7 +109,39 @@ const RegisterForm = () => {
       });
       const data = await res.json();
       console.log(data);
-      if (data.success) router.push("/auth/login");
+      if (data.success) {
+        router.push("/auth/login");
+        toast("Registration successful", {
+          description: "You are now registered",
+          closeButton: true,
+          theme: "dark",
+          position: "top-right",
+          className: "!bg-green-200 text-white",
+          icon: "✅",
+          iconTheme: {
+            primary: "white",
+            secondary: "green",
+          },
+        });
+      } else {
+        toast("Registration failed", {
+          description: "Please try again",
+          closeButton: true,
+          theme: "dark",
+          position: "top-right",
+          duration: 3000,
+          style: {
+            "--toastBackground": "red",
+            "--toastColor": "white",
+          },
+          className: "!bg-red-200 text-white",
+          icon: "❌",
+          iconTheme: {
+            primary: "white",
+            secondary: "red",
+          },
+        });
+      }
     } catch (error) {
       console.error("Registration error:", error);
       alert("Registration failed. Please try again.");
