@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import { comparePassword } from "@/lib/AuthHandler";
 import { UserModel } from "@/models/user/User.model";
 
+import { serialize } from "cookie";
+
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -21,6 +23,7 @@ export async function POST(request) {
     const userData = await request.json();
     const { email, password } = userData;
     const user = await UserModel.findOne({ email }).select("+password");
+
     if (!user) {
       return NextResponse.json(
         { success: false, message: "User not found" },
@@ -43,11 +46,21 @@ export async function POST(request) {
     user.verified = true;
     await user.save();
 
-    return NextResponse.json({
+    const cookie = serialize("token", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: 3600,
+      path: "/",
+    });
+
+    const res = NextResponse.json({
       success: true,
       message: "Login successful",
       data: user,
     });
+    res.headers.set("Set-Cookie", cookie);
+    return res;
   } catch (error) {
     console.error("Error processing request:", error);
     return NextResponse.json(
