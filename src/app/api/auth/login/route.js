@@ -37,12 +37,17 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-    delete user.password;
-
-    delete user._id;
-    const token = jwt.sign({ user }, process.env.JWT_SECRET, {
+    let data = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      verified: user.verified,
+    };
+    const token = jwt.sign({ ...data }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
+
     user.verificationToken = token;
     user.verified = true;
     await user.save();
