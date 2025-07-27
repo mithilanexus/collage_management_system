@@ -27,7 +27,7 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const { userData, loading, error } = useLoginUserData();
-
+  console.log(userData);
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
@@ -112,22 +112,22 @@ const Navbar = () => {
                     <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuItem>
                         <Link
-                          href="/student"
+                          href={`${userData.role === "student" ? "/student" : userData.role === "faculty" ? "/faculty" : "/admin"}`}
                           className="flex items-center w-full"
                         >
                           <GraduationCap className="w-4 h-4 mr-2" />
-                          Student Portal
+                          {userData.role === "student" ? "Student Portal" : userData.role === "faculty" ? "Faculty Portal" : "Admin Panel"}
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      {/* <DropdownMenuItem>
                         <Link
-                          href="/dashboard"
+                          href={`${userData.role === "student" ? "/student" : userData.role === "faculty" ? "/faculty" : "/admin"}`}
                           className="flex items-center w-full"
                         >
                           <User className="w-4 h-4 mr-2" />
                           Dashboard
                         </Link>
-                      </DropdownMenuItem>
+                      </DropdownMenuItem> */}
                       <DropdownMenuItem>
                         <Link
                           href="/profile"
