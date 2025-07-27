@@ -1,6 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { connect } from "mongoose";
 import connectDB from "@/lib/coonectDb";
 import { Toaster } from "@/components/ui/sonner";
 

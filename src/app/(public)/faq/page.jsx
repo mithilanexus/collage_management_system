@@ -67,7 +67,7 @@ export default function FAQ() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+     
       
       {/* Hero Section */}
       <section className="pt-20 pb-16">

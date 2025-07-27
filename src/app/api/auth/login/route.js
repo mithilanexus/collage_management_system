@@ -37,12 +37,13 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-    const token = jwt.sign({ gmail: user.email }, process.env.JWT_SECRET, {
+    delete user.password;
+
+    delete user._id;
+    const token = jwt.sign({ user }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
     user.verificationToken = token;
-    delete user.password;
-    delete user._id;
     user.verified = true;
     await user.save();
 

@@ -1,4 +1,3 @@
-import Navbar from "@/components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -80,7 +79,7 @@ export default function Courses() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+ 
       
       {/* Hero Section */}
       <section className="pt-20 pb-16">
