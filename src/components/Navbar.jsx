@@ -112,6 +112,15 @@ const Navbar = () => {
                     <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuItem>
                         <Link
+                          href="/student"
+                          className="flex items-center w-full"
+                        >
+                          <GraduationCap className="w-4 h-4 mr-2" />
+                          Student Portal
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <Link
                           href="/dashboard"
                           className="flex items-center w-full"
                         >
