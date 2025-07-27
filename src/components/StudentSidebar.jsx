@@ -26,10 +26,12 @@ import {
   Menu,
   X
 } from "lucide-react";
+import useLogout from "@/utils/useLogout";
 
 export default function StudentSidebar({ isOpen, setIsOpen }) {
   const pathname = usePathname();
   const [expandedItems, setExpandedItems] = useState({});
+  const handleLogout = useLogout();
 
   const toggleExpanded = (key) => {
     setExpandedItems(prev => ({
@@ -248,7 +250,9 @@ export default function StudentSidebar({ isOpen, setIsOpen }) {
             <Home className="w-4 h-4" />
             <span>Back to Website</span>
           </Link>
-          <button className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200">
+          <button 
+          onClick={handleLogout}
+          className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200">
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>
           </button>

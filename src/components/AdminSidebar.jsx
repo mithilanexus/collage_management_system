@@ -24,9 +24,11 @@ import {
   Menu,
   X
 } from "lucide-react";
+import useLogout from "@/utils/useLogout";
 
 export default function AdminSidebar({ isOpen, setIsOpen }) {
   const pathname = usePathname();
+  const handleLogout = useLogout();
   const [expandedItems, setExpandedItems] = useState({});
 
   const toggleExpanded = (key) => {
@@ -237,7 +239,9 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
             <p className="text-xs text-muted-foreground truncate">admin@edutech.edu</p>
           </div>
         </div>
-        <button className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200">
+        <button className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200"
+        onClick={handleLogout}
+        >
           <LogOut className="w-4 h-4" />
           <span>Sign Out</span>
         </button>

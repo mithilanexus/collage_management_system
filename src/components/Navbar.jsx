@@ -19,7 +19,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"; 
+import useLogout from "@/utils/useLogout";
 
 const Navbar = () => {
   const router = useRouter();
@@ -27,6 +28,7 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const { userData, loading, error } = useLoginUserData();
+  const handleLogout = useLogout();
   console.log(userData);
   useEffect(() => {
     const handleScroll = () => {
@@ -43,12 +45,7 @@ const Navbar = () => {
     { name: "Contact", href: "/contact" },
   ];
 
-  const handleLogout = async () => {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
-      method: "POST",
-    });
-    router.push("/auth/login");
-  };
+
 
   const isActive = (href) => {
     if (href === "/") return pathname === "/";

@@ -63,6 +63,9 @@ export async function middleware(request) {
     if (pathname.startsWith("/faculty") && payload.role !== "faculty") {
       return NextResponse.redirect(new URL("/unauthorized", request.url));
     }
+    if (pathname.startsWith("/profile") && token) {
+      return NextResponse.redirect(new URL("/auth/login", request.url));
+    }
 
     return NextResponse.next();
   } catch (err) {
