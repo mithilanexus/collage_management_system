@@ -28,19 +28,15 @@ export default function NotFound() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        <Card>
-          <CardContent className="p-8 text-center">
+      <div className="max-w-md w-full flex justify-center flex-col"> 
             {/* 404 Icon */}
-            <div className="w-20 h-20 mx-auto mb-6 bg-muted/50 rounded-full flex items-center justify-center">
-              <FileQuestion className="w-10 h-10 text-muted-foreground" />
-            </div>
+            
 
             {/* 404 Number */}
-            <div className="text-6xl font-bold text-primary mb-2">404</div>
+            <div className="text-6xl font-bold text-primary mb-2 text-center">404</div>
 
             {/* Title */}
-            <h1 className="text-2xl font-bold text-foreground mb-2">
+            <h1 className="text-2xl font-bold text-foreground mb-2 text-center">
               Page Not Found
             </h1>
 
@@ -92,9 +88,12 @@ export default function NotFound() {
             </div>
 
             {/* Popular Links */}
-            <div className="mt-6 pt-6 border-t border-border">
-              <p className="text-sm font-medium mb-3">Popular Pages:</p>
-              <div className="flex flex-wrap gap-2 justify-center">
+            <div className="mt-6 pt-6 border-t border-border flex gap-4">
+              <Button 
+                  variant="link" 
+                  size="sm" 
+                   className="text-sm px-0  font-medium mb-0 " >Popular Pages:</Button>
+              <div className="flex flex-wrap gap-2 justify-center items-center">
                 <Button 
                   variant="link" 
                   size="sm" 
@@ -134,9 +133,7 @@ export default function NotFound() {
             <div className="mt-6 flex items-center justify-center gap-2 text-muted-foreground">
               <GraduationCap className="w-4 h-4" />
               <span className="text-sm">EduTech College</span>
-            </div>
-          </CardContent>
-        </Card>
+            </div> 
       </div>
     </div>
   );

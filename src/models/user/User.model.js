@@ -26,6 +26,27 @@ const userSchema = new mongoose.Schema(
       enum: ["student", "admin"],
       default: "student",
     },
+    number: {
+      type: String,
+      required: false,
+    },
+    address: {
+      type: String,
+      required: false,
+    },
+    dateOfBirth: {
+      type: Date,
+      required: false,
+    },
+    bio: {
+      type: String,
+      required: false,
+      default: "I am a student at EduTech College.",
+    },
+    profileImg: {
+      type: String,
+      required: false,
+    },
     isAdmin: {
       type: Boolean,
       default: false,
@@ -44,4 +65,5 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-export const UserModel = mongoose.models.User || mongoose.model("User", userSchema);
+export const UserModel =
+  mongoose.models.User || mongoose.model("User", userSchema);

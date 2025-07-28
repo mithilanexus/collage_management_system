@@ -127,7 +127,7 @@ const Navbar = () => {
                       </DropdownMenuItem> */}
                       <DropdownMenuItem>
                         <Link
-                          href="/profile"
+                          href={`${userData.role === "student" ? "/student/profile" : userData.role === "faculty" ? "/faculty/profile" : "/admin/profile"}`}
                           className="flex items-center w-full"
                         >
                           <Settings className="w-4 h-4 mr-2" />
