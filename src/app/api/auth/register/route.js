@@ -19,6 +19,16 @@ export async function POST(request) {
   try {
     const userData = await request.json();
     const { firstName, lastName, email, password, role } = userData;
+    
+    // Check if user already exists
+    const existingUser = await UserModel.findOne({ email });
+    if (existingUser) {
+      return NextResponse.json(
+        { success: false, message: "User already exists" },
+        { status: 400 }
+      );
+    }
+
     const hashedPassword = await hashPassword(password);
     const newUser = await UserModel.create({
       firstName,
@@ -27,18 +37,23 @@ export async function POST(request) {
       password: hashedPassword,
       role,
     });
-    await newUser.save();
+
     console.log("Received user data:", userData);
 
     return NextResponse.json({
       success: true,
-      message: "Data saved successfully",
-      data: userData,
+      message: "User registered successfully",
+      data: {
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        email: newUser.email,
+        role: newUser.role
+      }
     });
   } catch (error) {
     console.error("Error processing request:", error);
     return NextResponse.json(
-      { success: false, message: "Failed to process request" },
+      { success: false, message: error.message || "Failed to process request" },
       { status: 400 }
     );
   }

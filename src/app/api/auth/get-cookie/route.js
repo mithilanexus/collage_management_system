@@ -4,9 +4,6 @@ export async function GET(request) {
   const secret = new TextEncoder().encode(process.env.JWT_SECRET);
   try {
     const cookie = request.cookies.get("token");
-     
-
-    const decoded = await jwtVerify(cookie.value, secret);
 
     if (!cookie) {
       return NextResponse.json(
@@ -14,6 +11,9 @@ export async function GET(request) {
         { status: 400 }
       );
     }
+
+    const decoded = await jwtVerify(cookie.value, secret);
+
     return NextResponse.json({
       success: true,
       message: "Cookie found",
