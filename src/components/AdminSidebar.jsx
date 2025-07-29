@@ -50,23 +50,16 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
       exact: true
     },
     {
-      title: "Students",
+      title: "Management",
       icon: Users,
       children: [
-        { title: "All Students", href: "/admin/students" },
-        { title: "Admissions", href: "/admin/students/admissions" },
-        { title: "Enrollments", href: "/admin/students/enrollments" }
+        { title: "Students", href: "/admin/management/students" },
+        { title: "Parents", href: "/admin/management/parents" },
+        { title: "Teachers", href: "/admin/management/teachers" },
+        { title: "Staff", href: "/admin/management/staff" }
       ]
     },
-    {
-      title: "Faculty",
-      icon: UserCheck,
-      children: [
-        { title: "All Faculty", href: "/admin/faculty" },
-        { title: "Departments", href: "/admin/faculty/departments" },
-        { title: "Schedules", href: "/admin/faculty/schedules" }
-      ]
-    },
+
     {
       title: "Courses",
       icon: BookOpen,
@@ -98,7 +91,7 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
       title: "Campus",
       icon: Building,
       children: [
-        { title: "Facilities", href: "/admin/campus/facilities" },
+        { title: "Facilities", href: "/admin/campus" },
         { title: "Events", href: "/admin/campus/events" },
         { title: "Resources", href: "/admin/campus/resources" }
       ]
@@ -139,11 +132,11 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
       )}
 
       {/* Sidebar */}
-      <div className={`fixed left-0 top-0 h-full w-64 bg-background border-r border-border shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${
+      <div className={`fixed left-0 top-0 h-screen w-64 bg-background border-r border-border shadow-lg z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
         isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
         {/* Header */}
-        <div className="p-6 border-b border-border">
+        <div className="p-6 border-b border-border flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center">
@@ -164,9 +157,9 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
           </div>
         </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4">
-        <div className="px-3 space-y-1">
+      {/* Navigation - Scrollable */}
+      <nav className="flex-1 overflow-y-auto py-2 scrollbar-thin">
+        <div className="px-3 space-y-0.5">
           {menuItems.map((item, index) => (
             <div key={index}>
               {item.children ? (
@@ -180,8 +173,8 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <item.icon className="w-5 h-5" />
-                      <span>{item.title}</span>
+                      <item.icon className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">{item.title}</span>
                     </div>
                     {expandedItems[item.title] ? (
                       <ChevronDown className="w-4 h-4" />
@@ -191,13 +184,13 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
                   </button>
                   
                   {expandedItems[item.title] && (
-                    <div className="mt-1 ml-6 space-y-1">
+                    <div className="mt-1 ml-6 space-y-0.5">
                       {item.children.map((child, childIndex) => (
                         <Link
                           key={childIndex}
                           href={child.href}
                           onClick={() => setIsOpen(false)}
-                          className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                          className={`block px-3 py-1.5 rounded-lg text-xs transition-all duration-200 ${
                             isActive(child.href)
                               ? "bg-primary/10 text-primary font-medium"
                               : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -219,8 +212,8 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
                 >
-                  <item.icon className="w-5 h-5" />
-                  <span>{item.title}</span>
+                  <item.icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">{item.title}</span>
                 </Link>
               )}
             </div>
