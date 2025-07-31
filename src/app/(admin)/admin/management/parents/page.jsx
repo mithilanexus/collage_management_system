@@ -17,6 +17,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function ParentsManagement() {
   const [parents, setParents] = useState([]);
@@ -45,9 +46,23 @@ export default function ParentsManagement() {
     router.push(`/admin/management/parents/${parentId}/edit`);
   };
 
-  const handleDelete = (parentId) => {
+  const handleDelete = async (parentId) => {
     if (confirm("Are you sure you want to delete this parent record?")) {
       setParents(parents.filter((p) => p._id !== parentId));
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent/${parentId}`,
+          {
+            method: "DELETE",
+          }
+        );
+        if (res.ok) {
+          toast.success("Parent deleted successfully");
+        }
+      } catch (error) {
+        console.error("Error deleting parent:", error);
+        toast.error("Failed to delete parent");
+      }
     }
   };
 

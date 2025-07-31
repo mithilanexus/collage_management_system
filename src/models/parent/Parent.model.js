@@ -133,6 +133,16 @@ const parentSchema = new Schema(
       type: String,
       required: true,
     },
+    students: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Student",
+      },
+    ],
+    studentsCount: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

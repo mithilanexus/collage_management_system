@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, Users } from "lucide-react";
+import { toast } from "sonner";
 
 // Mock data - in real app, this would come from API
 const mockParentData = {
@@ -37,8 +38,8 @@ const mockParentData = {
     annualIncome: "Rs. 5,00,000",
     emergencyContact: "9841234568",
     emergencyContactRelation: "Brother",
-    remarks: "Regular parent, business owner"
-  }
+    remarks: "Regular parent, business owner",
+  },
 };
 
 export default function EditParent() {
@@ -69,36 +70,63 @@ export default function EditParent() {
     annualIncome: "",
     emergencyContact: "",
     emergencyContactRelation: "",
-    remarks: ""
+    remarks: "",
   });
 
+  const parentId = params.id;
+  const router = useRouter();
   useEffect(() => {
-    // Simulate API call to fetch parent data
-    const parentId = parseInt(params.id);
-    const parentData = mockParentData[parentId];
-    
-    setTimeout(() => {
-      if (parentData) {
-        setFormData(parentData);
-      }
+    fetchParentData();
+    console.log(parentId);
+  }, [parentId]);
+  const fetchParentData = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent/${parentId}`
+      );
+      const data = await res.json();
+      setFormData({ ...data.data });
       setLoading(false);
-    }, 500);
-  }, [params.id]);
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    } catch (error) {
+      console.error("Error fetching parents data:", error);
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Updated parent data:", formData);
-    alert("Parent information updated successfully!");
-    window.location.href = `/admin/management/parents/${params.id}`;
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent/${parentId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+      if (res.ok) {
+        router.back();
+      } else {
+        toast.error("Failed to update parent information. Please try again.");
+      }
+    } catch (error) {
+      toast.error("Failed to update parent information. Please try again.");
+    }
   };
 
   const provinces = [
-    "Province No. 1", "Madhesh Province", "Bagmati Province", "Gandaki Province", 
-    "Lumbini Province", "Karnali Province", "Sudurpashchim Province"
+    "Province No. 1",
+    "Madhesh Province",
+    "Bagmati Province",
+    "Gandaki Province",
+    "Lumbini Province",
+    "Karnali Province",
+    "Sudurpashchim Province",
   ];
 
   if (loading) {
@@ -116,15 +144,17 @@ export default function EditParent() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
           onClick={() => window.history.back()}
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Edit Parent</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+            Edit Parent
+          </h1>
           <p className="text-muted-foreground">Update parent information</p>
         </div>
       </div>
@@ -142,7 +172,9 @@ export default function EditParent() {
                 <Input
                   id="fatherName"
                   value={formData.fatherName}
-                  onChange={(e) => handleInputChange("fatherName", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("fatherName", e.target.value)
+                  }
                   placeholder="Ram Bahadur Shrestha"
                   required
                 />
@@ -152,7 +184,9 @@ export default function EditParent() {
                 <Input
                   id="fatherOccupation"
                   value={formData.fatherOccupation}
-                  onChange={(e) => handleInputChange("fatherOccupation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("fatherOccupation", e.target.value)
+                  }
                   placeholder="Business, Teacher, Farmer"
                   required
                 />
@@ -162,7 +196,9 @@ export default function EditParent() {
                 <Input
                   id="fatherEducation"
                   value={formData.fatherEducation}
-                  onChange={(e) => handleInputChange("fatherEducation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("fatherEducation", e.target.value)
+                  }
                   placeholder="SLC, +2, Bachelor"
                 />
               </div>
@@ -171,7 +207,9 @@ export default function EditParent() {
                 <Input
                   id="fatherPhone"
                   value={formData.fatherPhone}
-                  onChange={(e) => handleInputChange("fatherPhone", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("fatherPhone", e.target.value)
+                  }
                   placeholder="98XXXXXXXX"
                 />
               </div>
@@ -191,7 +229,9 @@ export default function EditParent() {
                 <Input
                   id="motherName"
                   value={formData.motherName}
-                  onChange={(e) => handleInputChange("motherName", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("motherName", e.target.value)
+                  }
                   placeholder="Sita Shrestha"
                   required
                 />
@@ -201,7 +241,9 @@ export default function EditParent() {
                 <Input
                   id="motherOccupation"
                   value={formData.motherOccupation}
-                  onChange={(e) => handleInputChange("motherOccupation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("motherOccupation", e.target.value)
+                  }
                   placeholder="Housewife, Teacher, Nurse"
                   required
                 />
@@ -211,7 +253,9 @@ export default function EditParent() {
                 <Input
                   id="motherEducation"
                   value={formData.motherEducation}
-                  onChange={(e) => handleInputChange("motherEducation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("motherEducation", e.target.value)
+                  }
                   placeholder="SLC, +2, Bachelor"
                 />
               </div>
@@ -220,7 +264,9 @@ export default function EditParent() {
                 <Input
                   id="motherPhone"
                   value={formData.motherPhone}
-                  onChange={(e) => handleInputChange("motherPhone", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("motherPhone", e.target.value)
+                  }
                   placeholder="98XXXXXXXX"
                 />
               </div>
@@ -240,7 +286,9 @@ export default function EditParent() {
                 <Input
                   id="primaryPhone"
                   value={formData.primaryPhone}
-                  onChange={(e) => handleInputChange("primaryPhone", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("primaryPhone", e.target.value)
+                  }
                   placeholder="98XXXXXXXX"
                   required
                 />
@@ -250,7 +298,9 @@ export default function EditParent() {
                 <Input
                   id="alternatePhone"
                   value={formData.alternatePhone}
-                  onChange={(e) => handleInputChange("alternatePhone", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("alternatePhone", e.target.value)
+                  }
                   placeholder="98XXXXXXXX"
                 />
               </div>
@@ -280,7 +330,9 @@ export default function EditParent() {
                 <Input
                   id="permanentAddress"
                   value={formData.permanentAddress}
-                  onChange={(e) => handleInputChange("permanentAddress", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("permanentAddress", e.target.value)
+                  }
                   placeholder="Kathmandu-10, Bagbazar"
                   required
                 />
@@ -290,7 +342,9 @@ export default function EditParent() {
                 <Input
                   id="temporaryAddress"
                   value={formData.temporaryAddress}
-                  onChange={(e) => handleInputChange("temporaryAddress", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("temporaryAddress", e.target.value)
+                  }
                   placeholder="Same as permanent address"
                 />
               </div>
@@ -299,7 +353,9 @@ export default function EditParent() {
                 <Input
                   id="district"
                   value={formData.district}
-                  onChange={(e) => handleInputChange("district", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("district", e.target.value)
+                  }
                   placeholder="Kathmandu"
                   required
                 />
@@ -309,12 +365,16 @@ export default function EditParent() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.province}
-                  onChange={(e) => handleInputChange("province", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("province", e.target.value)
+                  }
                   required
                 >
                   <option value="">Select Province</option>
                   {provinces.map((province, index) => (
-                    <option key={index} value={province}>{province}</option>
+                    <option key={index} value={province}>
+                      {province}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -334,7 +394,9 @@ export default function EditParent() {
                 <Input
                   id="citizenshipNumber"
                   value={formData.citizenshipNumber}
-                  onChange={(e) => handleInputChange("citizenshipNumber", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("citizenshipNumber", e.target.value)
+                  }
                   placeholder="12-01-68-01234"
                   required
                 />
@@ -344,7 +406,9 @@ export default function EditParent() {
                 <Input
                   id="annualIncome"
                   value={formData.annualIncome}
-                  onChange={(e) => handleInputChange("annualIncome", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("annualIncome", e.target.value)
+                  }
                   placeholder="Rs. 5,00,000"
                 />
               </div>
@@ -360,20 +424,31 @@ export default function EditParent() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="emergencyContact">Emergency Contact Number</Label>
+                <Label htmlFor="emergencyContact">
+                  Emergency Contact Number
+                </Label>
                 <Input
                   id="emergencyContact"
                   value={formData.emergencyContact}
-                  onChange={(e) => handleInputChange("emergencyContact", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("emergencyContact", e.target.value)
+                  }
                   placeholder="98XXXXXXXX"
                 />
               </div>
               <div>
-                <Label htmlFor="emergencyContactRelation">Emergency Contact Relation</Label>
+                <Label htmlFor="emergencyContactRelation">
+                  Emergency Contact Relation
+                </Label>
                 <Input
                   id="emergencyContactRelation"
                   value={formData.emergencyContactRelation}
-                  onChange={(e) => handleInputChange("emergencyContactRelation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "emergencyContactRelation",
+                      e.target.value
+                    )
+                  }
                   placeholder="Brother, Sister, Uncle"
                 />
               </div>
@@ -393,8 +468,8 @@ export default function EditParent() {
 
         {/* Submit Buttons */}
         <div className="flex justify-end gap-4">
-          <Button 
-            type="button" 
+          <Button
+            type="button"
             variant="outline"
             onClick={() => window.history.back()}
           >

@@ -1,18 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  ArrowLeft, 
-  Edit, 
-  UserPlus, 
-  Users, 
-  Phone, 
-  Mail, 
+import {
+  ArrowLeft,
+  Edit,
+  UserPlus,
+  Users,
+  Phone,
+  Mail,
   MapPin,
   Calendar,
   FileText,
@@ -23,7 +23,7 @@ import {
   BookOpen,
   Award,
   Save,
-  Settings
+  Settings,
 } from "lucide-react";
 
 // Mock data - in real app, this would come from API
@@ -64,7 +64,7 @@ const mockParentData = {
         slcGpa: "3.85",
         hostelResident: false,
         transportUser: true,
-        scholarshipHolder: false
+        scholarshipHolder: false,
       },
       {
         id: 2,
@@ -84,55 +84,15 @@ const mockParentData = {
         slcGpa: "3.65",
         hostelResident: false,
         transportUser: true,
-        scholarshipHolder: true
-      }
-    ]
+        scholarshipHolder: true,
+      },
+    ],
   },
-  2: {
-    id: 2,
-    fatherName: "Hari Prasad Poudel",
-    motherName: "Gita Poudel",
-    guardianName: "Hari Prasad Poudel",
-    fatherOccupation: "Teacher",
-    motherOccupation: "Nurse",
-    guardianOccupation: "Teacher",
-    phone: "9841234568",
-    alternatePhone: "9851234568",
-    email: "hari.poudel@gmail.com",
-    address: "Pokhara-15, Lakeside",
-    district: "Kaski",
-    province: "Gandaki Province",
-    citizenship: "23-01-70-01235",
-    annualIncome: "Rs. 8,00,000",
-    studentsCount: 1,
-    students: [
-      {
-        id: 3,
-        name: "Priya Poudel",
-        studentId: "STU2024003",
-        class: "Grade 11",
-        section: "A",
-        rollNumber: "08",
-        admissionDate: "2023-04-20",
-        status: "Active",
-        phone: "9841234569",
-        email: "priya.poudel@student.edu.np",
-        dateOfBirth: "2007-08-22",
-        bloodGroup: "B+",
-        address: "Pokhara-15, Lakeside",
-        previousSchool: "Shree Higher Secondary School",
-        slcGpa: "3.92",
-        hostelResident: true,
-        transportUser: false,
-        scholarshipHolder: true
-      }
-    ]
-  }
 };
 
 export default function ParentDetail() {
   const params = useParams();
-  const [parent, setParent] = useState(null);
+  const [parent, setParent] = useState({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -151,28 +111,38 @@ export default function ParentDetail() {
     address: "",
     previousSchool: "",
     slcGpa: "",
-    status: "Active"
+    status: "Active",
   });
+  const parentId = params.id;
 
   useEffect(() => {
     // Simulate API call
-    const parentId = parseInt(params.id);
-    const parentData = mockParentData[parentId];
-    
-    setTimeout(() => {
-      setParent(parentData);
+    fetchParentData();
+  }, [parentId]);
+  const fetchParentData = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent/${parentId}`
+      );
+      const data = await res.json();
+      setParent({ ...data.data });
+
       setLoading(false);
-    }, 500);
-  }, [params.id]);
-
-  const filteredStudents = parent?.students?.filter(student =>
-    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.class.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
-
+    } catch (error) {
+      console.error("Error fetching parents data:", error);
+    }
+  };
+  const filteredStudents =
+    parent?.students?.filter(
+      (student) =>
+        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.class.toLowerCase().includes(searchTerm.toLowerCase())
+    ) || [];
+  const router = useRouter();
   const handleEdit = () => {
-    window.location.href = `/admin/management/parents/${params.id}/edit`;
+    // window.location.href = `/admin/management/parents/${params.id}/edit`;
+    router.push(`/admin/management/parents/${params.id}/edit`);
   };
 
   const handleAddStudent = () => {
@@ -190,7 +160,7 @@ export default function ParentDetail() {
       address: "",
       previousSchool: "",
       slcGpa: "",
-      status: "Active"
+      status: "Active",
     });
   };
 
@@ -200,19 +170,25 @@ export default function ParentDetail() {
 
   const handleEditStudent = (student) => {
     setEditingStudent(student);
-    setNewStudentData({...student});
+    setNewStudentData({ ...student });
     setShowAddStudentForm(true);
   };
 
   const handleRemoveStudent = (studentId) => {
-    if (confirm("Are you sure you want to remove this student from this parent?")) {
-      const updatedStudents = parent.students.filter(s => s.id !== studentId);
-      setParent({...parent, students: updatedStudents, studentsCount: updatedStudents.length});
+    if (
+      confirm("Are you sure you want to remove this student from this parent?")
+    ) {
+      const updatedStudents = parent.students.filter((s) => s.id !== studentId);
+      setParent({
+        ...parent,
+        students: updatedStudents,
+        studentsCount: updatedStudents.length,
+      });
     }
   };
 
   const handleStudentInputChange = (field, value) => {
-    setNewStudentData(prev => ({ ...prev, [field]: value }));
+    setNewStudentData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSaveStudent = () => {
@@ -223,19 +199,23 @@ export default function ParentDetail() {
 
     if (editingStudent) {
       // Update existing student
-      const updatedStudents = parent.students.map(s =>
-        s.id === editingStudent.id ? {...newStudentData} : s
+      const updatedStudents = parent.students.map((s) =>
+        s.id === editingStudent.id ? { ...newStudentData } : s
       );
-      setParent({...parent, students: updatedStudents});
+      setParent({ ...parent, students: updatedStudents });
       alert("Student updated successfully!");
     } else {
       // Add new student
       const newStudent = {
         ...newStudentData,
-        id: Date.now()
+        id: Date.now(),
       };
       const updatedStudents = [...parent.students, newStudent];
-      setParent({...parent, students: updatedStudents, studentsCount: updatedStudents.length});
+      setParent({
+        ...parent,
+        students: updatedStudents,
+        studentsCount: updatedStudents.length,
+      });
       alert("Student added successfully!");
     }
 
@@ -259,7 +239,7 @@ export default function ParentDetail() {
       address: "",
       previousSchool: "",
       slcGpa: "",
-      status: "Active"
+      status: "Active",
     });
   };
 
@@ -277,8 +257,12 @@ export default function ParentDetail() {
   if (!parent) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-foreground mb-2">Parent Not Found</h2>
-        <p className="text-muted-foreground mb-4">This parent record does not exist.</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">
+          Parent Not Found
+        </h2>
+        <p className="text-muted-foreground mb-4">
+          This parent record does not exist.
+        </p>
         <Button onClick={() => window.history.back()}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Go Back
@@ -292,16 +276,20 @@ export default function ParentDetail() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => window.history.back()}
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Parent Management</h1>
-            <p className="text-muted-foreground">{parent.fatherName} - Student Management</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+              Parent Management
+            </h1>
+            <p className="text-muted-foreground">
+              {parent.fatherName} - Student Management
+            </p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -329,34 +317,48 @@ export default function ParentDetail() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Father's Name</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Father's Name
+                </label>
                 <p className="font-medium">{parent.fatherName}</p>
-                <p className="text-sm text-muted-foreground">{parent.fatherOccupation}</p>
+                <p className="text-sm text-muted-foreground">
+                  {parent.fatherOccupation}
+                </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Mother's Name</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Mother's Name
+                </label>
                 <p className="font-medium">{parent.motherName}</p>
-                <p className="text-sm text-muted-foreground">{parent.motherOccupation}</p>
+                <p className="text-sm text-muted-foreground">
+                  {parent.motherOccupation}
+                </p>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="w-4 h-4 text-primary" />
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Primary Phone</label>
-                  <p className="font-medium">{parent.phone}</p>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Primary Phone
+                  </label>
+                  <p className="font-medium">{parent.fatherPhone}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="w-4 h-4 text-primary" />
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Email</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Email
+                  </label>
                   <p className="font-medium">{parent.email}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <MapPin className="w-4 h-4 text-primary" />
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Address</label>
-                  <p className="font-medium">{parent.address}</p>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Address
+                  </label>
+                  <p className="font-medium">{parent.permanentAddress}</p>
                 </div>
               </div>
             </CardContent>
@@ -366,8 +368,12 @@ export default function ParentDetail() {
           <Card>
             <CardContent className="p-6 text-center">
               <Users className="w-12 h-12 text-primary mx-auto mb-4" />
-              <div className="text-3xl font-bold text-primary">{parent.studentsCount}</div>
-              <div className="text-sm text-muted-foreground">Total Students</div>
+              <div className="text-3xl font-bold text-primary">
+                {parent.studentsCount}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Total Students
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -390,7 +396,10 @@ export default function ParentDetail() {
                     className="pl-10"
                   />
                 </div>
-                <Button onClick={handleAddStudent} className="flex items-center gap-2">
+                <Button
+                  onClick={handleAddStudent}
+                  className="flex items-center gap-2"
+                >
                   <UserPlus className="w-4 h-4" />
                   Add Student
                 </Button>
@@ -402,7 +411,9 @@ export default function ParentDetail() {
           {showAddStudentForm && (
             <Card>
               <CardHeader>
-                <CardTitle>{editingStudent ? 'Edit Student' : 'Add New Student'}</CardTitle>
+                <CardTitle>
+                  {editingStudent ? "Edit Student" : "Add New Student"}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -411,7 +422,9 @@ export default function ParentDetail() {
                     <Input
                       id="studentName"
                       value={newStudentData.name}
-                      onChange={(e) => handleStudentInputChange("name", e.target.value)}
+                      onChange={(e) =>
+                        handleStudentInputChange("name", e.target.value)
+                      }
                       placeholder="Student full name"
                     />
                   </div>
@@ -420,7 +433,9 @@ export default function ParentDetail() {
                     <Input
                       id="studentId"
                       value={newStudentData.studentId}
-                      onChange={(e) => handleStudentInputChange("studentId", e.target.value)}
+                      onChange={(e) =>
+                        handleStudentInputChange("studentId", e.target.value)
+                      }
                       placeholder="STU2024001"
                       disabled={editingStudent}
                     />
@@ -430,11 +445,28 @@ export default function ParentDetail() {
                     <select
                       className="w-full p-2 border border-border rounded-md"
                       value={newStudentData.class}
-                      onChange={(e) => handleStudentInputChange("class", e.target.value)}
+                      onChange={(e) =>
+                        handleStudentInputChange("class", e.target.value)
+                      }
                     >
                       <option value="">Select Class</option>
-                      {["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"].map((cls, index) => (
-                        <option key={index} value={cls}>{cls}</option>
+                      {[
+                        "Grade 1",
+                        "Grade 2",
+                        "Grade 3",
+                        "Grade 4",
+                        "Grade 5",
+                        "Grade 6",
+                        "Grade 7",
+                        "Grade 8",
+                        "Grade 9",
+                        "Grade 10",
+                        "Grade 11",
+                        "Grade 12",
+                      ].map((cls, index) => (
+                        <option key={index} value={cls}>
+                          {cls}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -443,7 +475,9 @@ export default function ParentDetail() {
                     <Input
                       id="studentSection"
                       value={newStudentData.section}
-                      onChange={(e) => handleStudentInputChange("section", e.target.value)}
+                      onChange={(e) =>
+                        handleStudentInputChange("section", e.target.value)
+                      }
                       placeholder="A"
                     />
                   </div>
@@ -452,7 +486,9 @@ export default function ParentDetail() {
                     <Input
                       id="studentRoll"
                       value={newStudentData.rollNumber}
-                      onChange={(e) => handleStudentInputChange("rollNumber", e.target.value)}
+                      onChange={(e) =>
+                        handleStudentInputChange("rollNumber", e.target.value)
+                      }
                       placeholder="15"
                     />
                   </div>
@@ -461,7 +497,9 @@ export default function ParentDetail() {
                     <Input
                       id="studentPhone"
                       value={newStudentData.phone}
-                      onChange={(e) => handleStudentInputChange("phone", e.target.value)}
+                      onChange={(e) =>
+                        handleStudentInputChange("phone", e.target.value)
+                      }
                       placeholder="98XXXXXXXX"
                     />
                   </div>
@@ -471,7 +509,9 @@ export default function ParentDetail() {
                       id="studentEmail"
                       type="email"
                       value={newStudentData.email}
-                      onChange={(e) => handleStudentInputChange("email", e.target.value)}
+                      onChange={(e) =>
+                        handleStudentInputChange("email", e.target.value)
+                      }
                       placeholder="student@example.com"
                     />
                   </div>
@@ -481,7 +521,9 @@ export default function ParentDetail() {
                       id="studentDob"
                       type="date"
                       value={newStudentData.dateOfBirth}
-                      onChange={(e) => handleStudentInputChange("dateOfBirth", e.target.value)}
+                      onChange={(e) =>
+                        handleStudentInputChange("dateOfBirth", e.target.value)
+                      }
                     />
                   </div>
                   <div>
@@ -489,12 +531,18 @@ export default function ParentDetail() {
                     <select
                       className="w-full p-2 border border-border rounded-md"
                       value={newStudentData.bloodGroup}
-                      onChange={(e) => handleStudentInputChange("bloodGroup", e.target.value)}
+                      onChange={(e) =>
+                        handleStudentInputChange("bloodGroup", e.target.value)
+                      }
                     >
                       <option value="">Select Blood Group</option>
-                      {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((group, index) => (
-                        <option key={index} value={group}>{group}</option>
-                      ))}
+                      {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(
+                        (group, index) => (
+                          <option key={index} value={group}>
+                            {group}
+                          </option>
+                        )
+                      )}
                     </select>
                   </div>
                   <div>
@@ -502,7 +550,9 @@ export default function ParentDetail() {
                     <Input
                       id="studentGpa"
                       value={newStudentData.slcGpa}
-                      onChange={(e) => handleStudentInputChange("slcGpa", e.target.value)}
+                      onChange={(e) =>
+                        handleStudentInputChange("slcGpa", e.target.value)
+                      }
                       placeholder="3.85"
                     />
                   </div>
@@ -511,16 +561,25 @@ export default function ParentDetail() {
                     <Input
                       id="studentAddress"
                       value={newStudentData.address}
-                      onChange={(e) => handleStudentInputChange("address", e.target.value)}
+                      onChange={(e) =>
+                        handleStudentInputChange("address", e.target.value)
+                      }
                       placeholder="Student address"
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <Label htmlFor="studentPreviousSchool">Previous School</Label>
+                    <Label htmlFor="studentPreviousSchool">
+                      Previous School
+                    </Label>
                     <Input
                       id="studentPreviousSchool"
                       value={newStudentData.previousSchool}
-                      onChange={(e) => handleStudentInputChange("previousSchool", e.target.value)}
+                      onChange={(e) =>
+                        handleStudentInputChange(
+                          "previousSchool",
+                          e.target.value
+                        )
+                      }
                       placeholder="Previous school name"
                     />
                   </div>
@@ -531,7 +590,7 @@ export default function ParentDetail() {
                   </Button>
                   <Button onClick={handleSaveStudent}>
                     <Save className="w-4 h-4 mr-2" />
-                    {editingStudent ? 'Update Student' : 'Add Student'}
+                    {editingStudent ? "Update Student" : "Add Student"}
                   </Button>
                 </div>
               </CardContent>
@@ -556,15 +615,22 @@ export default function ParentDetail() {
               ) : (
                 <div className="space-y-4">
                   {filteredStudents.map((student) => (
-                    <div key={student.id} className="p-4 border border-border rounded-lg hover:bg-muted/50">
+                    <div
+                      key={student.id}
+                      className="p-4 border border-border rounded-lg hover:bg-muted/50"
+                    >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-start gap-4">
                           <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
                             <GraduationCap className="w-6 h-6 text-primary" />
                           </div>
                           <div>
-                            <h4 className="font-medium text-lg">{student.name}</h4>
-                            <p className="text-sm text-muted-foreground">{student.email}</p>
+                            <h4 className="font-medium text-lg">
+                              {student.name}
+                            </h4>
+                            <p className="text-sm text-muted-foreground">
+                              {student.email}
+                            </p>
                             <div className="flex items-center gap-4 mt-2">
                               <span className="text-sm font-mono bg-muted px-2 py-1 rounded">
                                 {student.studentId}
@@ -581,16 +647,26 @@ export default function ParentDetail() {
                         <div className="flex gap-2">
                           <Button
                             size="sm"
-                            onClick={() => window.location.href = `/admin/management/parents/${parent.id}/student/${student.id}`}
+                            onClick={() =>
+                              (window.location.href = `/admin/management/parents/${parent.id}/student/${student.id}`)
+                            }
                             className="flex items-center gap-1"
                           >
                             <Settings className="w-3 h-3" />
                             Manage
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleViewStudent(student)}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewStudent(student)}
+                          >
                             <Eye className="w-3 h-3" />
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleEditStudent(student)}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditStudent(student)}
+                          >
                             <Edit className="w-3 h-3" />
                           </Button>
                           <Button
@@ -603,15 +679,17 @@ export default function ParentDetail() {
                           </Button>
                         </div>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div>
                           <span className="text-muted-foreground">Status:</span>
-                          <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                            student.status === "Active" 
-                              ? "bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-300"
-                              : "bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-300"
-                          }`}>
+                          <span
+                            className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                              student.status === "Active"
+                                ? "bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-300"
+                                : "bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-300"
+                            }`}
+                          >
                             {student.status}
                           </span>
                         </div>
@@ -620,25 +698,33 @@ export default function ParentDetail() {
                           <p className="font-medium">{student.phone}</p>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Blood Group:</span>
+                          <span className="text-muted-foreground">
+                            Blood Group:
+                          </span>
                           <p className="font-medium">{student.bloodGroup}</p>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">SLC GPA:</span>
+                          <span className="text-muted-foreground">
+                            SLC GPA:
+                          </span>
                           <p className="font-medium">{student.slcGpa}</p>
                         </div>
                       </div>
-                      
+
                       <div className="mt-3 pt-3 border-t border-border">
                         <div className="flex items-center gap-4 text-sm">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-3 h-3" />
-                            <span className="text-muted-foreground">Admission: {student.admissionDate}</span>
+                            <span className="text-muted-foreground">
+                              Admission: {student.admissionDate}
+                            </span>
                           </div>
                           {student.scholarshipHolder && (
                             <div className="flex items-center gap-2">
                               <Award className="w-3 h-3 text-yellow-600" />
-                              <span className="text-yellow-600">Scholarship</span>
+                              <span className="text-yellow-600">
+                                Scholarship
+                              </span>
                             </div>
                           )}
                           {student.hostelResident && (
@@ -678,51 +764,76 @@ export default function ParentDetail() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Full Name</label>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStudent.name}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Student ID</label>
-                  <p className="text-sm text-muted-foreground font-mono">{selectedStudent.studentId}</p>
+                  <p className="text-sm text-muted-foreground font-mono">
+                    {selectedStudent.studentId}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Class</label>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.class} - Section {selectedStudent.section}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStudent.class} - Section {selectedStudent.section}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Roll Number</label>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.rollNumber}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStudent.rollNumber}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Date of Birth</label>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.dateOfBirth}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStudent.dateOfBirth}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Blood Group</label>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.bloodGroup}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStudent.bloodGroup}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Phone</label>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.phone}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStudent.phone}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Email</label>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.email}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStudent.email}
+                  </p>
                 </div>
                 <div className="md:col-span-2">
                   <label className="text-sm font-medium">Address</label>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.address}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStudent.address}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Previous School</label>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.previousSchool}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStudent.previousSchool}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">SLC GPA</label>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.slcGpa}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStudent.slcGpa}
+                  </p>
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setSelectedStudent(null)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedStudent(null)}
+                >
                   Close
                 </Button>
                 <Button onClick={() => handleEditStudent(selectedStudent.id)}>
