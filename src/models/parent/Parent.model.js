@@ -89,7 +89,7 @@ const parentSchema = new Schema(
     },
     ward: {
       type: String,
-      required: true,
+      required: false,
     },
 
     // Legal Information
@@ -99,11 +99,11 @@ const parentSchema = new Schema(
     },
     citizenshipIssueDate: {
       type: Date,
-      required: true,
+      required: false,
     },
     citizenshipIssueDistrict: {
       type: String,
-      required: true,
+      required: false,
     },
 
     // Financial Information
@@ -119,15 +119,19 @@ const parentSchema = new Schema(
     // Additional Information
     emergencyContact: {
       type: String,
-      required: true,
+      required: false,
     },
     emergencyContactRelation: {
       type: String,
-      required: true,
+      required: false,
     },
     remarks: {
       type: String,
       required: false,
+    },
+    parentId: {
+      type: String,
+      required: true,
     },
   },
   {

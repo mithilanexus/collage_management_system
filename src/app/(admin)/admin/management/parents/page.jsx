@@ -1,115 +1,80 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Search, 
-  Plus, 
-  Eye, 
-  Edit, 
-  Trash2, 
+import {
+  Search,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
   Users,
   Phone,
   MapPin,
   Mail,
-  UserPlus
+  UserPlus,
 } from "lucide-react";
-
-// Mock data for parents (English interface, Nepali college system fields)
-const mockParents = [
-  {
-    id: 1,
-    fatherName: "Ram Bahadur Shrestha",
-    motherName: "Sita Shrestha",
-    guardianName: "Ram Bahadur Shrestha",
-    fatherOccupation: "Business",
-    motherOccupation: "Housewife",
-    guardianOccupation: "Business",
-    phone: "9841234567",
-    alternatePhone: "9851234567",
-    email: "ram.shrestha@gmail.com",
-    address: "Kathmandu-10, Bagbazar",
-    district: "Kathmandu",
-    province: "Bagmati Province",
-    citizenship: "12-01-68-01234",
-    annualIncome: "Rs. 5,00,000",
-    studentsCount: 2,
-    students: ["Anil Shrestha", "Sunil Shrestha"]
-  },
-  {
-    id: 2,
-    fatherName: "Hari Prasad Poudel",
-    motherName: "Gita Poudel",
-    guardianName: "Hari Prasad Poudel",
-    fatherOccupation: "Teacher",
-    motherOccupation: "Nurse",
-    guardianOccupation: "Teacher",
-    phone: "9841234568",
-    alternatePhone: "9851234568",
-    email: "hari.poudel@gmail.com",
-    address: "Pokhara-15, Lakeside",
-    district: "Kaski",
-    province: "Gandaki Province",
-    citizenship: "23-01-70-01235",
-    annualIncome: "Rs. 8,00,000",
-    studentsCount: 1,
-    students: ["Priya Poudel"]
-  },
-  {
-    id: 3,
-    fatherName: "Krishna Bahadur Gurung",
-    motherName: "Maya Gurung",
-    guardianName: "Krishna Bahadur Gurung",
-    fatherOccupation: "Farmer",
-    motherOccupation: "Farmer",
-    guardianOccupation: "Farmer",
-    phone: "9841234569",
-    alternatePhone: "9851234569",
-    email: "krishna.gurung@gmail.com",
-    address: "Gorkha-5, Arughat",
-    district: "Gorkha",
-    province: "Gandaki Province",
-    citizenship: "28-01-65-01236",
-    annualIncome: "Rs. 3,00,000",
-    studentsCount: 3,
-    students: ["Rajesh Gurung", "Suresh Gurung", "Dinesh Gurung"]
-  }
-];
+import { useRouter } from "next/navigation";
 
 export default function ParentsManagement() {
-  const [parents, setParents] = useState(mockParents);
+  const [parents, setParents] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredParents = parents.filter(parent =>
-    parent.fatherName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    parent.motherName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    parent.phone.includes(searchTerm) ||
-    parent.email.toLowerCase().includes(searchTerm.toLowerCase())
+  useEffect(() => {
+    fetchParentsData();
+  }, []);
+
+  const filteredParents = parents.filter(
+    (parent) =>
+      parent.fatherName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      parent.motherName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      parent.fatherPhone.includes(searchTerm) ||
+      parent.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleView = (parent) => {
     // Redirect to parent detail page for better UX
-    window.location.href = `/admin/management/parents/${parent.id}`;
+    // window.location.href = `/admin/management/parents/${parent.id}`;
+    router.push(`/admin/management/parents/${parent._id}`);
   };
 
   const handleEdit = (parentId) => {
-    window.location.href = `/admin/management/parents/${parentId}/edit`;
+    // window.location.href = `/admin/management/parents/${parentId}/edit`;
+    router.push(`/admin/management/parents/${parentId}/edit`);
   };
 
   const handleDelete = (parentId) => {
     if (confirm("Are you sure you want to delete this parent record?")) {
-      setParents(parents.filter(p => p.id !== parentId));
+      setParents(parents.filter((p) => p._id !== parentId));
     }
   };
 
   const handleAddStudent = (parentId) => {
-    window.location.href = `/admin/management/parents/${parentId}/add-student`;
+    // window.location.href = `/admin/management/parents/${parentId}/add-student`;
+    router.push(`/admin/management/parents/${parentId}/add-student`);
   };
 
   const handleManageStudents = (parentId) => {
-    window.location.href = `/admin/management/parents/${parentId}`;
+    router.push(`/admin/management/parents/${parentId}`);
+  };
+  const router = useRouter();
+  const handleBack = () => {
+    router.back();
+  };
+
+  const fetchParentsData = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent`
+      );
+      const data = await res.json();
+      setParents([...data.data]);
+      console.log(parents);
+    } catch (error) {
+      console.error("Error fetching parents data:", error);
+    }
   };
 
   return (
@@ -117,10 +82,17 @@ export default function ParentsManagement() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Parents Management</h1>
-          <p className="text-muted-foreground">Manage parent records and information</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+            Parents Management
+          </h1>
+          <p className="text-muted-foreground">
+            Manage parent records and information
+          </p>
         </div>
-        <Button onClick={() => window.location.href = '/admin/management/parents/add'} className="flex items-center gap-2">
+        <Button
+          onClick={() => router.push("/admin/management/parents/add")}
+          className="flex items-center gap-2"
+        >
           <Plus className="w-4 h-4" />
           Add New Parent
         </Button>
@@ -141,7 +113,9 @@ export default function ParentsManagement() {
         </div>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-primary">{parents.length}</div>
+            <div className="text-2xl font-bold text-primary">
+              {parents.length}
+            </div>
             <div className="text-sm text-muted-foreground">Total Parents</div>
           </CardContent>
         </Card>
@@ -167,19 +141,23 @@ export default function ParentsManagement() {
               </thead>
               <tbody>
                 {filteredParents.map((parent) => (
-                  <tr key={parent.id} className="border-b hover:bg-muted/50">
+                  <tr key={parent._id} className="border-b hover:bg-muted/50">
                     <td className="p-4">
                       <div className="font-medium">{parent.fatherName}</div>
-                      <div className="text-sm text-muted-foreground">{parent.fatherOccupation}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {parent.fatherOccupation}
+                      </div>
                     </td>
                     <td className="p-4">
                       <div className="font-medium">{parent.motherName}</div>
-                      <div className="text-sm text-muted-foreground">{parent.motherOccupation}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {parent.motherOccupation}
+                      </div>
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-1 mb-1">
                         <Phone className="w-3 h-3" />
-                        <span className="text-sm">{parent.phone}</span>
+                        <span className="text-sm">{parent.fatherPhone}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Mail className="w-3 h-3" />
@@ -189,13 +167,17 @@ export default function ParentsManagement() {
                     <td className="p-4">
                       <div className="flex items-center gap-1">
                         <MapPin className="w-3 h-3" />
-                        <span className="text-sm">{parent.address}</span>
+                        <span className="text-sm">
+                          {parent.permanentAddress}
+                        </span>
                       </div>
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-1">
                         <Users className="w-4 h-4 text-primary" />
-                        <span className="font-medium">{parent.studentsCount}</span>
+                        <span className="font-medium">
+                          {parent.studentsCount || 0}
+                        </span>
                       </div>
                     </td>
                     <td className="p-4">
@@ -203,7 +185,7 @@ export default function ParentsManagement() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleManageStudents(parent.id)}
+                          onClick={() => handleManageStudents(parent._id)}
                           title="Manage Students"
                         >
                           <Users className="w-3 h-3" />
@@ -219,7 +201,7 @@ export default function ParentsManagement() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleEdit(parent.id)}
+                          onClick={() => handleEdit(parent._id)}
                           title="Edit Parent"
                         >
                           <Edit className="w-3 h-3" />
@@ -227,7 +209,7 @@ export default function ParentsManagement() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleDelete(parent.id)}
+                          onClick={() => handleDelete(parent._id)}
                           className="text-destructive hover:text-destructive"
                           title="Delete Parent"
                         >
@@ -242,8 +224,6 @@ export default function ParentsManagement() {
           </div>
         </CardContent>
       </Card>
-
-
     </div>
   );
 }

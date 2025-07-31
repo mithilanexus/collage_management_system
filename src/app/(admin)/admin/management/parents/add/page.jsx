@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function AddParent() {
   const [formData, setFormData] = useState({
@@ -15,75 +17,102 @@ export default function AddParent() {
     fatherOccupation: "",
     fatherEducation: "",
     fatherPhone: "",
-    
+
     // Mother's Information
     motherName: "",
     motherOccupation: "",
     motherEducation: "",
     motherPhone: "",
-    
+
     // Guardian Information (if different)
     guardianName: "",
     guardianRelation: "",
     guardianPhone: "",
     guardianOccupation: "",
-    
+
     // Contact Information
     primaryPhone: "",
     alternatePhone: "",
     email: "",
-    
+
     // Address Information
     permanentAddress: "",
     temporaryAddress: "",
     district: "",
     province: "",
     ward: "",
-    
+
     // Legal Information
     citizenshipNumber: "",
     citizenshipIssueDate: "",
     citizenshipIssueDistrict: "",
-    
+
     // Financial Information
     annualIncome: "",
     occupation: "",
-    
+
     // Additional Information
     emergencyContact: "",
     emergencyContactRelation: "",
-    remarks: ""
+    remarks: "",
   });
 
+  const router = useRouter();
+
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Parent data:", formData);
-    alert("Parent information added successfully!");
-    window.location.href = "/admin/management/parents";
+
+    const newParentData = {
+      ...formData,
+    };
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newParentData),
+      }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      router.push(`/admin/management/parents`);
+      toast.success("Parent added successfully");
+    } else {
+      toast.error("Failed to add parent information. Please try again.");
+    }
   };
 
   const provinces = [
-    "Province No. 1", "Madhesh Province", "Bagmati Province", "Gandaki Province", 
-    "Lumbini Province", "Karnali Province", "Sudurpashchim Province"
+    "Province No. 1",
+    "Madhesh Province",
+    "Bagmati Province",
+    "Gandaki Province",
+    "Lumbini Province",
+    "Karnali Province",
+    "Sudurpashchim Province",
   ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
           onClick={() => window.history.back()}
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Add New Parent</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+            Add New Parent
+          </h1>
           <p className="text-muted-foreground">Enter parent information</p>
         </div>
       </div>
@@ -101,7 +130,9 @@ export default function AddParent() {
                 <Input
                   id="fatherName"
                   value={formData.fatherName}
-                  onChange={(e) => handleInputChange("fatherName", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("fatherName", e.target.value)
+                  }
                   placeholder="Ram Bahadur Shrestha"
                   required
                 />
@@ -111,7 +142,9 @@ export default function AddParent() {
                 <Input
                   id="fatherOccupation"
                   value={formData.fatherOccupation}
-                  onChange={(e) => handleInputChange("fatherOccupation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("fatherOccupation", e.target.value)
+                  }
                   placeholder="Business, Teacher, Farmer"
                   required
                 />
@@ -121,7 +154,9 @@ export default function AddParent() {
                 <Input
                   id="fatherEducation"
                   value={formData.fatherEducation}
-                  onChange={(e) => handleInputChange("fatherEducation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("fatherEducation", e.target.value)
+                  }
                   placeholder="SLC, +2, Bachelor"
                 />
               </div>
@@ -130,7 +165,9 @@ export default function AddParent() {
                 <Input
                   id="fatherPhone"
                   value={formData.fatherPhone}
-                  onChange={(e) => handleInputChange("fatherPhone", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("fatherPhone", e.target.value)
+                  }
                   placeholder="98XXXXXXXX"
                 />
               </div>
@@ -150,7 +187,9 @@ export default function AddParent() {
                 <Input
                   id="motherName"
                   value={formData.motherName}
-                  onChange={(e) => handleInputChange("motherName", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("motherName", e.target.value)
+                  }
                   placeholder="Sita Shrestha"
                   required
                 />
@@ -160,7 +199,9 @@ export default function AddParent() {
                 <Input
                   id="motherOccupation"
                   value={formData.motherOccupation}
-                  onChange={(e) => handleInputChange("motherOccupation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("motherOccupation", e.target.value)
+                  }
                   placeholder="Housewife, Teacher, Nurse"
                   required
                 />
@@ -170,7 +211,9 @@ export default function AddParent() {
                 <Input
                   id="motherEducation"
                   value={formData.motherEducation}
-                  onChange={(e) => handleInputChange("motherEducation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("motherEducation", e.target.value)
+                  }
                   placeholder="SLC, +2, Bachelor"
                 />
               </div>
@@ -179,7 +222,9 @@ export default function AddParent() {
                 <Input
                   id="motherPhone"
                   value={formData.motherPhone}
-                  onChange={(e) => handleInputChange("motherPhone", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("motherPhone", e.target.value)
+                  }
                   placeholder="98XXXXXXXX"
                 />
               </div>
@@ -199,7 +244,9 @@ export default function AddParent() {
                 <Input
                   id="primaryPhone"
                   value={formData.primaryPhone}
-                  onChange={(e) => handleInputChange("primaryPhone", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("primaryPhone", e.target.value)
+                  }
                   placeholder="98XXXXXXXX"
                   required
                 />
@@ -209,7 +256,9 @@ export default function AddParent() {
                 <Input
                   id="alternatePhone"
                   value={formData.alternatePhone}
-                  onChange={(e) => handleInputChange("alternatePhone", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("alternatePhone", e.target.value)
+                  }
                   placeholder="98XXXXXXXX"
                 />
               </div>
@@ -239,7 +288,9 @@ export default function AddParent() {
                 <Input
                   id="permanentAddress"
                   value={formData.permanentAddress}
-                  onChange={(e) => handleInputChange("permanentAddress", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("permanentAddress", e.target.value)
+                  }
                   placeholder="Kathmandu-10, Bagbazar"
                   required
                 />
@@ -249,7 +300,9 @@ export default function AddParent() {
                 <Input
                   id="temporaryAddress"
                   value={formData.temporaryAddress}
-                  onChange={(e) => handleInputChange("temporaryAddress", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("temporaryAddress", e.target.value)
+                  }
                   placeholder="Same as permanent address"
                 />
               </div>
@@ -258,7 +311,9 @@ export default function AddParent() {
                 <Input
                   id="district"
                   value={formData.district}
-                  onChange={(e) => handleInputChange("district", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("district", e.target.value)
+                  }
                   placeholder="Kathmandu"
                   required
                 />
@@ -268,12 +323,16 @@ export default function AddParent() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.province}
-                  onChange={(e) => handleInputChange("province", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("province", e.target.value)
+                  }
                   required
                 >
                   <option value="">Select Province</option>
                   {provinces.map((province, index) => (
-                    <option key={index} value={province}>{province}</option>
+                    <option key={index} value={province}>
+                      {province}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -293,7 +352,9 @@ export default function AddParent() {
                 <Input
                   id="citizenshipNumber"
                   value={formData.citizenshipNumber}
-                  onChange={(e) => handleInputChange("citizenshipNumber", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("citizenshipNumber", e.target.value)
+                  }
                   placeholder="12-01-68-01234"
                   required
                 />
@@ -303,7 +364,9 @@ export default function AddParent() {
                 <Input
                   id="annualIncome"
                   value={formData.annualIncome}
-                  onChange={(e) => handleInputChange("annualIncome", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("annualIncome", e.target.value)
+                  }
                   placeholder="Rs. 5,00,000"
                 />
               </div>
@@ -319,20 +382,31 @@ export default function AddParent() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="emergencyContact">Emergency Contact Number</Label>
+                <Label htmlFor="emergencyContact">
+                  Emergency Contact Number
+                </Label>
                 <Input
                   id="emergencyContact"
                   value={formData.emergencyContact}
-                  onChange={(e) => handleInputChange("emergencyContact", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("emergencyContact", e.target.value)
+                  }
                   placeholder="98XXXXXXXX"
                 />
               </div>
               <div>
-                <Label htmlFor="emergencyContactRelation">Emergency Contact Relation</Label>
+                <Label htmlFor="emergencyContactRelation">
+                  Emergency Contact Relation
+                </Label>
                 <Input
                   id="emergencyContactRelation"
                   value={formData.emergencyContactRelation}
-                  onChange={(e) => handleInputChange("emergencyContactRelation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "emergencyContactRelation",
+                      e.target.value
+                    )
+                  }
                   placeholder="Brother, Sister, Uncle"
                 />
               </div>
@@ -352,8 +426,8 @@ export default function AddParent() {
 
         {/* Submit Buttons */}
         <div className="flex justify-end gap-4">
-          <Button 
-            type="button" 
+          <Button
+            type="button"
             variant="outline"
             onClick={() => window.history.back()}
           >
