@@ -25,7 +25,9 @@ export async function POST(request) {
       req.fatherPhone,
       req.citizenshipNumber || req.motherPhone
     );
-    req.parentId = parentId;
+    req.parentKey = parentId;
+    req.students = [];
+    req.studentsCount = 0;
     const newParent = await parentModel.create(req);
     const res = {
       message: "Parent added successfully",

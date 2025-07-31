@@ -6,7 +6,7 @@ export async function GET(request, { params }) {
     const parent = await parentModel
       .findOne({
         _id: parentId,
-      })
+      }).populate("students")
       .lean();
     return Response.json({
       message: "Parents data retrieved successfully",

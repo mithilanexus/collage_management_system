@@ -25,74 +25,76 @@ import {
   Save,
   Settings,
 } from "lucide-react";
+import { toast } from "sonner";
 
 // Mock data - in real app, this would come from API
-const mockParentData = {
-  1: {
-    id: 1,
-    fatherName: "Ram Bahadur Shrestha",
-    motherName: "Sita Shrestha",
-    guardianName: "Ram Bahadur Shrestha",
-    fatherOccupation: "Business",
-    motherOccupation: "Housewife",
-    guardianOccupation: "Business",
-    phone: "9841234567",
-    alternatePhone: "9851234567",
-    email: "ram.shrestha@gmail.com",
-    address: "Kathmandu-10, Bagbazar",
-    district: "Kathmandu",
-    province: "Bagmati Province",
-    citizenship: "12-01-68-01234",
-    annualIncome: "Rs. 5,00,000",
-    studentsCount: 2,
-    students: [
-      {
-        id: 1,
-        name: "Anil Shrestha",
-        studentId: "STU2024001",
-        class: "Grade 12",
-        section: "A",
-        rollNumber: "15",
-        admissionDate: "2023-04-15",
-        status: "Active",
-        phone: "9841234567",
-        email: "anil.shrestha@student.edu.np",
-        dateOfBirth: "2006-05-15",
-        bloodGroup: "A+",
-        address: "Kathmandu-10, Bagbazar",
-        previousSchool: "Shree Secondary School",
-        slcGpa: "3.85",
-        hostelResident: false,
-        transportUser: true,
-        scholarshipHolder: false,
-      },
-      {
-        id: 2,
-        name: "Sunil Shrestha",
-        studentId: "STU2024002",
-        class: "Grade 10",
-        section: "B",
-        rollNumber: "22",
-        admissionDate: "2022-04-20",
-        status: "Active",
-        phone: "9841234568",
-        email: "sunil.shrestha@student.edu.np",
-        dateOfBirth: "2008-08-10",
-        bloodGroup: "B+",
-        address: "Kathmandu-10, Bagbazar",
-        previousSchool: "Shree Basic School",
-        slcGpa: "3.65",
-        hostelResident: false,
-        transportUser: true,
-        scholarshipHolder: true,
-      },
-    ],
-  },
-};
+// const mockParentData = {
+//   1: {
+//     id: 1,
+//     fatherName: "Ram Bahadur Shrestha",
+//     motherName: "Sita Shrestha",
+//     guardianName: "Ram Bahadur Shrestha",
+//     fatherOccupation: "Business",
+//     motherOccupation: "Housewife",
+//     guardianOccupation: "Business",
+//     phone: "9841234567",
+//     alternatePhone: "9851234567",
+//     email: "ram.shrestha@gmail.com",
+//     address: "Kathmandu-10, Bagbazar",
+//     district: "Kathmandu",
+//     province: "Bagmati Province",
+//     citizenship: "12-01-68-01234",
+//     annualIncome: "Rs. 5,00,000",
+//     studentsCount: 2,
+//     students: [
+//       {
+//         id: 1,
+//         name: "Anil Shrestha",
+//         studentId: "STU2024001",
+//         class: "Grade 12",
+//         section: "A",
+//         rollNumber: "15",
+//         admissionDate: "2023-04-15",
+//         status: "Active",
+//         phone: "9841234567",
+//         email: "anil.shrestha@student.edu.np",
+//         dateOfBirth: "2006-05-15",
+//         bloodGroup: "A+",
+//         address: "Kathmandu-10, Bagbazar",
+//         previousSchool: "Shree Secondary School",
+//         slcGpa: "3.85",
+//         hostelResident: false,
+//         transportUser: true,
+//         scholarshipHolder: false,
+//       },
+//       {
+//         id: 2,
+//         name: "Sunil Shrestha",
+//         studentId: "STU2024002",
+//         class: "Grade 10",
+//         section: "B",
+//         rollNumber: "22",
+//         admissionDate: "2022-04-20",
+//         status: "Active",
+//         phone: "9841234568",
+//         email: "sunil.shrestha@student.edu.np",
+//         dateOfBirth: "2008-08-10",
+//         bloodGroup: "B+",
+//         address: "Kathmandu-10, Bagbazar",
+//         previousSchool: "Shree Basic School",
+//         slcGpa: "3.65",
+//         hostelResident: false,
+//         transportUser: true,
+//         scholarshipHolder: true,
+//       },
+//     ],
+//   },
+// };
 
 export default function ParentDetail() {
   const params = useParams();
   const [parent, setParent] = useState({});
+  const [filteredStudents, setFilteredStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -100,7 +102,6 @@ export default function ParentDetail() {
   const [editingStudent, setEditingStudent] = useState(null);
   const [newStudentData, setNewStudentData] = useState({
     name: "",
-    studentId: "",
     class: "",
     section: "",
     rollNumber: "",
@@ -126,19 +127,30 @@ export default function ParentDetail() {
       );
       const data = await res.json();
       setParent({ ...data.data });
+      setFilteredStudents(data.data.students);
 
       setLoading(false);
     } catch (error) {
       console.error("Error fetching parents data:", error);
     }
   };
-  const filteredStudents =
-    parent?.students?.filter(
+  // Filter students based on search term
+  useEffect(() => {
+    if (!parent.students) return;
+
+    const filtered = parent.students.filter(
       (student) =>
-        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.class.toLowerCase().includes(searchTerm.toLowerCase())
-    ) || [];
+        student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.studentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.class?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.section?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.rollNumber?.includes(searchTerm) ||
+        student.phone?.includes(searchTerm) ||
+        student.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredStudents(filtered);
+  }, [searchTerm, parent.students]);
+
   const router = useRouter();
   const handleEdit = () => {
     // window.location.href = `/admin/management/parents/${params.id}/edit`;
@@ -149,7 +161,6 @@ export default function ParentDetail() {
     setShowAddStudentForm(true);
     setNewStudentData({
       name: "",
-      studentId: `STU${Date.now()}`,
       class: "",
       section: "",
       rollNumber: "",
@@ -191,9 +202,9 @@ export default function ParentDetail() {
     setNewStudentData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveStudent = () => {
+  const handleSaveStudent = async () => {
     if (!newStudentData.name || !newStudentData.class) {
-      alert("Please fill in required fields (Name and Class)");
+      toast.error("Please fill in required fields (Name and Class)");
       return;
     }
 
@@ -203,23 +214,48 @@ export default function ParentDetail() {
         s.id === editingStudent.id ? { ...newStudentData } : s
       );
       setParent({ ...parent, students: updatedStudents });
-      alert("Student updated successfully!");
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent/${parentId}/add-student/${updatedStudents._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newStudentData),
+        }
+      );
     } else {
       // Add new student
       const newStudent = {
         ...newStudentData,
-        id: Date.now(),
       };
-      const updatedStudents = [...parent.students, newStudent];
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent/${parentId}/add-student`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newStudent),
+        }
+      );
+      const data = await res.json();
       setParent({
         ...parent,
-        students: updatedStudents,
-        studentsCount: updatedStudents.length,
+        students: [...parent.students, data.data],
+        studentsCount: parent.students.length + 1,
       });
-      alert("Student added successfully!");
+      setFilteredStudents([...parent.students, data.data]);
+      console.log(parent);
+      if (data.success) {
+        setShowAddStudentForm(false);
+        toast.success("Student added successfully!");
+      } else {
+        toast.error("Failed to add student");
+      }
     }
 
-    setShowAddStudentForm(false);
     setEditingStudent(null);
   };
 
@@ -553,6 +589,10 @@ export default function ParentDetail() {
                       onChange={(e) =>
                         handleStudentInputChange("slcGpa", e.target.value)
                       }
+                      type="number"
+                      max={4.0}
+                      min={0}
+                      step={0.01}
                       placeholder="3.85"
                     />
                   </div>
@@ -616,7 +656,7 @@ export default function ParentDetail() {
                 <div className="space-y-4">
                   {filteredStudents.map((student) => (
                     <div
-                      key={student.id}
+                      key={student._id}
                       className="p-4 border border-border rounded-lg hover:bg-muted/50"
                     >
                       <div className="flex items-start justify-between mb-3">
@@ -648,7 +688,9 @@ export default function ParentDetail() {
                           <Button
                             size="sm"
                             onClick={() =>
-                              (window.location.href = `/admin/management/parents/${parent.id}/student/${student.id}`)
+                              router.push(
+                                `/admin/management/parents/${parent._id}/student/${student._id}`
+                              )
                             }
                             className="flex items-center gap-1"
                           >

@@ -129,7 +129,7 @@ const parentSchema = new Schema(
       type: String,
       required: false,
     },
-    parentId: {
+    parentKey: {
       type: String,
       required: true,
     },
