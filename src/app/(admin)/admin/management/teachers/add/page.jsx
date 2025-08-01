@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, GraduationCap } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function AddTeacher() {
   const [formData, setFormData] = useState({
@@ -17,20 +19,20 @@ export default function AddTeacher() {
     department: "",
     qualification: "",
     experience: "",
-    
+
     // Contact Information
     phone: "",
     email: "",
     address: "",
     district: "",
     province: "",
-    
+
     // Professional Information
     joiningDate: "",
     salary: "",
     status: "",
     subjects: "",
-    
+
     // Personal Information
     dateOfBirth: "",
     gender: "",
@@ -38,38 +40,70 @@ export default function AddTeacher() {
     maritalStatus: "",
     citizenship: "",
     panNumber: "",
-    
+
     // Additional Information
     emergencyContact: "",
     emergencyContactRelation: "",
     bankAccount: "",
     bankName: "",
-    remarks: ""
+    remarks: "",
   });
 
+  const router = useRouter();
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Teacher data:", formData);
-    alert("Teacher added successfully!");
-    window.location.href = "/admin/management/teachers";
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teacher`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Teacher added successfully");
+        router.push("/admin/management/teachers");
+      }
+    } catch (error) {
+      toast.error("Failed to add teacher information. Please try again.");
+    }
   };
 
   const provinces = [
-    "Province No. 1", "Madhesh Province", "Bagmati Province", "Gandaki Province", 
-    "Lumbini Province", "Karnali Province", "Sudurpashchim Province"
+    "Province No. 1",
+    "Madhesh Province",
+    "Bagmati Province",
+    "Gandaki Province",
+    "Lumbini Province",
+    "Karnali Province",
+    "Sudurpashchim Province",
   ];
 
   const departments = [
-    "English Department", "Mathematics Department", "Science Department", "Nepali Department",
-    "Social Studies Department", "Computer Science Department", "Commerce Department"
+    "English Department",
+    "Mathematics Department",
+    "Science Department",
+    "Nepali Department",
+    "Social Studies Department",
+    "Computer Science Department",
+    "Commerce Department",
   ];
 
   const designations = [
-    "Professor", "Associate Professor", "Assistant Professor", "Lecturer", "Senior Lecturer"
+    "Professor",
+    "Associate Professor",
+    "Assistant Professor",
+    "Lecturer",
+    "Senior Lecturer",
   ];
 
   const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -78,15 +112,17 @@ export default function AddTeacher() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
           onClick={() => window.history.back()}
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Add New Teacher</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+            Add New Teacher
+          </h1>
           <p className="text-muted-foreground">Enter teacher information</p>
         </div>
       </div>
@@ -114,7 +150,9 @@ export default function AddTeacher() {
                 <Input
                   id="employeeId"
                   value={formData.employeeId}
-                  onChange={(e) => handleInputChange("employeeId", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("employeeId", e.target.value)
+                  }
                   placeholder="TCH001"
                   required
                 />
@@ -124,12 +162,16 @@ export default function AddTeacher() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.designation}
-                  onChange={(e) => handleInputChange("designation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("designation", e.target.value)
+                  }
                   required
                 >
                   <option value="">Select Designation</option>
                   {designations.map((designation, index) => (
-                    <option key={index} value={designation}>{designation}</option>
+                    <option key={index} value={designation}>
+                      {designation}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -138,12 +180,16 @@ export default function AddTeacher() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.department}
-                  onChange={(e) => handleInputChange("department", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("department", e.target.value)
+                  }
                   required
                 >
                   <option value="">Select Department</option>
                   {departments.map((department, index) => (
-                    <option key={index} value={department}>{department}</option>
+                    <option key={index} value={department}>
+                      {department}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -152,7 +198,9 @@ export default function AddTeacher() {
                 <Input
                   id="qualification"
                   value={formData.qualification}
-                  onChange={(e) => handleInputChange("qualification", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("qualification", e.target.value)
+                  }
                   placeholder="Ph.D. in English Literature"
                   required
                 />
@@ -162,7 +210,9 @@ export default function AddTeacher() {
                 <Input
                   id="experience"
                   value={formData.experience}
-                  onChange={(e) => handleInputChange("experience", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("experience", e.target.value)
+                  }
                   placeholder="15 years"
                 />
               </div>
@@ -213,7 +263,9 @@ export default function AddTeacher() {
                 <Input
                   id="district"
                   value={formData.district}
-                  onChange={(e) => handleInputChange("district", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("district", e.target.value)
+                  }
                   placeholder="Kathmandu"
                   required
                 />
@@ -223,12 +275,16 @@ export default function AddTeacher() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.province}
-                  onChange={(e) => handleInputChange("province", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("province", e.target.value)
+                  }
                   required
                 >
                   <option value="">Select Province</option>
                   {provinces.map((province, index) => (
-                    <option key={index} value={province}>{province}</option>
+                    <option key={index} value={province}>
+                      {province}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -249,7 +305,9 @@ export default function AddTeacher() {
                   id="joiningDate"
                   type="date"
                   value={formData.joiningDate}
-                  onChange={(e) => handleInputChange("joiningDate", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("joiningDate", e.target.value)
+                  }
                   required
                 />
               </div>
@@ -281,7 +339,9 @@ export default function AddTeacher() {
                 <Input
                   id="subjects"
                   value={formData.subjects}
-                  onChange={(e) => handleInputChange("subjects", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("subjects", e.target.value)
+                  }
                   placeholder="English Literature, Creative Writing (comma separated)"
                 />
               </div>
@@ -302,7 +362,9 @@ export default function AddTeacher() {
                   id="dateOfBirth"
                   type="date"
                   value={formData.dateOfBirth}
-                  onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("dateOfBirth", e.target.value)
+                  }
                 />
               </div>
               <div>
@@ -323,11 +385,15 @@ export default function AddTeacher() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.bloodGroup}
-                  onChange={(e) => handleInputChange("bloodGroup", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("bloodGroup", e.target.value)
+                  }
                 >
                   <option value="">Select Blood Group</option>
                   {bloodGroups.map((group, index) => (
-                    <option key={index} value={group}>{group}</option>
+                    <option key={index} value={group}>
+                      {group}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -336,7 +402,9 @@ export default function AddTeacher() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.maritalStatus}
-                  onChange={(e) => handleInputChange("maritalStatus", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("maritalStatus", e.target.value)
+                  }
                 >
                   <option value="">Select Status</option>
                   <option value="Single">Single</option>
@@ -350,7 +418,9 @@ export default function AddTeacher() {
                 <Input
                   id="citizenship"
                   value={formData.citizenship}
-                  onChange={(e) => handleInputChange("citizenship", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("citizenship", e.target.value)
+                  }
                   placeholder="12-01-70-01234"
                 />
               </div>
@@ -359,7 +429,9 @@ export default function AddTeacher() {
                 <Input
                   id="panNumber"
                   value={formData.panNumber}
-                  onChange={(e) => handleInputChange("panNumber", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("panNumber", e.target.value)
+                  }
                   placeholder="301234567"
                 />
               </div>
@@ -379,16 +451,25 @@ export default function AddTeacher() {
                 <Input
                   id="emergencyContact"
                   value={formData.emergencyContact}
-                  onChange={(e) => handleInputChange("emergencyContact", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("emergencyContact", e.target.value)
+                  }
                   placeholder="98XXXXXXXX"
                 />
               </div>
               <div>
-                <Label htmlFor="emergencyContactRelation">Emergency Contact Relation</Label>
+                <Label htmlFor="emergencyContactRelation">
+                  Emergency Contact Relation
+                </Label>
                 <Input
                   id="emergencyContactRelation"
                   value={formData.emergencyContactRelation}
-                  onChange={(e) => handleInputChange("emergencyContactRelation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "emergencyContactRelation",
+                      e.target.value
+                    )
+                  }
                   placeholder="Spouse, Parent, Sibling"
                 />
               </div>
@@ -397,7 +478,9 @@ export default function AddTeacher() {
                 <Input
                   id="bankAccount"
                   value={formData.bankAccount}
-                  onChange={(e) => handleInputChange("bankAccount", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("bankAccount", e.target.value)
+                  }
                   placeholder="Account number"
                 />
               </div>
@@ -406,7 +489,9 @@ export default function AddTeacher() {
                 <Input
                   id="bankName"
                   value={formData.bankName}
-                  onChange={(e) => handleInputChange("bankName", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("bankName", e.target.value)
+                  }
                   placeholder="Nepal Bank Limited"
                 />
               </div>
@@ -426,8 +511,8 @@ export default function AddTeacher() {
 
         {/* Submit Buttons */}
         <div className="flex justify-end gap-4">
-          <Button 
-            type="button" 
+          <Button
+            type="button"
             variant="outline"
             onClick={() => window.history.back()}
           >

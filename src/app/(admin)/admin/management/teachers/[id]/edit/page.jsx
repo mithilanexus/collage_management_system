@@ -1,46 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, GraduationCap } from "lucide-react";
-
-// Mock data - in real app, this would come from API
-const mockTeacherData = {
-  1: {
-    id: 1,
-    name: "Dr. Ram Prasad Sharma",
-    employeeId: "TCH001",
-    designation: "Professor",
-    department: "English Department",
-    qualification: "Ph.D. in English Literature",
-    experience: "15 years",
-    phone: "9841234567",
-    email: "ram.sharma@college.edu.np",
-    address: "Kathmandu-5, New Baneshwor",
-    district: "Kathmandu",
-    province: "Bagmati Province",
-    joiningDate: "2009-07-15",
-    salary: "Rs. 85,000",
-    subjects: "English Literature, Creative Writing, Research Methodology",
-    status: "Permanent",
-    dateOfBirth: "1975-03-20",
-    gender: "Male",
-    bloodGroup: "A+",
-    maritalStatus: "Married",
-    citizenship: "12-01-70-01234",
-    panNumber: "301234567",
-    emergencyContact: "9841234568",
-    emergencyContactRelation: "Wife",
-    bankAccount: "1234567890",
-    bankName: "Nepal Bank Limited",
-    remarks: "Experienced professor, department head"
-  }
-};
+import { toast } from "sonner";
 
 export default function EditTeacher() {
   const params = useParams();
@@ -71,45 +39,88 @@ export default function EditTeacher() {
     emergencyContactRelation: "",
     bankAccount: "",
     bankName: "",
-    remarks: ""
+    remarks: "",
   });
-
+  const router = useRouter();
   useEffect(() => {
     // Simulate API call to fetch teacher data
-    const teacherId = parseInt(params.id);
-    const teacherData = mockTeacherData[teacherId];
-    
-    setTimeout(() => {
-      if (teacherData) {
-        setFormData(teacherData);
-      }
-      setLoading(false);
-    }, 500);
-  }, [params.id]);
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    fetchTeacherData();
+  }, [params.id]);
+  const fetchTeacherData = async () => {
+    const teacherId = params.id;
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teacher/${teacherId}`
+      );
+      const data = await res.json();
+      setFormData({ ...data.data });
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching teacher data:", error);
+      toast.error("Failed to fetch teacher data", {
+        description: "Please try again later",
+        duration: 3000,
+      });
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Updated teacher data:", formData);
-    alert("Teacher information updated successfully!");
-    window.location.href = "/admin/management/teachers";
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teacher/${params.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Teacher updated successfully");
+        router.back();
+      }
+    } catch (error) {
+      toast.error("Failed to update teacher information. Please try again.", {
+        duration: 3000,
+      });
+    }
   };
 
   const provinces = [
-    "Province No. 1", "Madhesh Province", "Bagmati Province", "Gandaki Province", 
-    "Lumbini Province", "Karnali Province", "Sudurpashchim Province"
+    "Province No. 1",
+    "Madhesh Province",
+    "Bagmati Province",
+    "Gandaki Province",
+    "Lumbini Province",
+    "Karnali Province",
+    "Sudurpashchim Province",
   ];
 
   const departments = [
-    "English Department", "Mathematics Department", "Science Department", "Nepali Department",
-    "Social Studies Department", "Computer Science Department", "Commerce Department"
+    "English Department",
+    "Mathematics Department",
+    "Science Department",
+    "Nepali Department",
+    "Social Studies Department",
+    "Computer Science Department",
+    "Commerce Department",
   ];
 
   const designations = [
-    "Professor", "Associate Professor", "Assistant Professor", "Lecturer", "Senior Lecturer"
+    "Professor",
+    "Associate Professor",
+    "Assistant Professor",
+    "Lecturer",
+    "Senior Lecturer",
   ];
 
   const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -129,15 +140,17 @@ export default function EditTeacher() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
           onClick={() => window.history.back()}
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Edit Teacher</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+            Edit Teacher
+          </h1>
           <p className="text-muted-foreground">Update teacher information</p>
         </div>
       </div>
@@ -165,7 +178,9 @@ export default function EditTeacher() {
                 <Input
                   id="employeeId"
                   value={formData.employeeId}
-                  onChange={(e) => handleInputChange("employeeId", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("employeeId", e.target.value)
+                  }
                   placeholder="TCH001"
                   disabled
                 />
@@ -175,12 +190,16 @@ export default function EditTeacher() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.designation}
-                  onChange={(e) => handleInputChange("designation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("designation", e.target.value)
+                  }
                   required
                 >
                   <option value="">Select Designation</option>
                   {designations.map((designation, index) => (
-                    <option key={index} value={designation}>{designation}</option>
+                    <option key={index} value={designation}>
+                      {designation}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -189,12 +208,16 @@ export default function EditTeacher() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.department}
-                  onChange={(e) => handleInputChange("department", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("department", e.target.value)
+                  }
                   required
                 >
                   <option value="">Select Department</option>
                   {departments.map((department, index) => (
-                    <option key={index} value={department}>{department}</option>
+                    <option key={index} value={department}>
+                      {department}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -203,7 +226,9 @@ export default function EditTeacher() {
                 <Input
                   id="qualification"
                   value={formData.qualification}
-                  onChange={(e) => handleInputChange("qualification", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("qualification", e.target.value)
+                  }
                   placeholder="Ph.D. in English Literature"
                   required
                 />
@@ -213,7 +238,9 @@ export default function EditTeacher() {
                 <Input
                   id="experience"
                   value={formData.experience}
-                  onChange={(e) => handleInputChange("experience", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("experience", e.target.value)
+                  }
                   placeholder="15 years"
                 />
               </div>
@@ -264,7 +291,9 @@ export default function EditTeacher() {
                 <Input
                   id="district"
                   value={formData.district}
-                  onChange={(e) => handleInputChange("district", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("district", e.target.value)
+                  }
                   placeholder="Kathmandu"
                   required
                 />
@@ -274,12 +303,16 @@ export default function EditTeacher() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.province}
-                  onChange={(e) => handleInputChange("province", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("province", e.target.value)
+                  }
                   required
                 >
                   <option value="">Select Province</option>
                   {provinces.map((province, index) => (
-                    <option key={index} value={province}>{province}</option>
+                    <option key={index} value={province}>
+                      {province}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -300,7 +333,9 @@ export default function EditTeacher() {
                   id="joiningDate"
                   type="date"
                   value={formData.joiningDate}
-                  onChange={(e) => handleInputChange("joiningDate", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("joiningDate", e.target.value)
+                  }
                   required
                 />
               </div>
@@ -332,7 +367,9 @@ export default function EditTeacher() {
                 <Input
                   id="subjects"
                   value={formData.subjects}
-                  onChange={(e) => handleInputChange("subjects", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("subjects", e.target.value)
+                  }
                   placeholder="English Literature, Creative Writing (comma separated)"
                 />
               </div>
@@ -353,7 +390,9 @@ export default function EditTeacher() {
                   id="dateOfBirth"
                   type="date"
                   value={formData.dateOfBirth}
-                  onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("dateOfBirth", e.target.value)
+                  }
                 />
               </div>
               <div>
@@ -374,11 +413,15 @@ export default function EditTeacher() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.bloodGroup}
-                  onChange={(e) => handleInputChange("bloodGroup", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("bloodGroup", e.target.value)
+                  }
                 >
                   <option value="">Select Blood Group</option>
                   {bloodGroups.map((group, index) => (
-                    <option key={index} value={group}>{group}</option>
+                    <option key={index} value={group}>
+                      {group}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -387,7 +430,9 @@ export default function EditTeacher() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.maritalStatus}
-                  onChange={(e) => handleInputChange("maritalStatus", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("maritalStatus", e.target.value)
+                  }
                 >
                   <option value="">Select Status</option>
                   <option value="Single">Single</option>
@@ -401,7 +446,9 @@ export default function EditTeacher() {
                 <Input
                   id="citizenship"
                   value={formData.citizenship}
-                  onChange={(e) => handleInputChange("citizenship", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("citizenship", e.target.value)
+                  }
                   placeholder="12-01-70-01234"
                 />
               </div>
@@ -410,7 +457,9 @@ export default function EditTeacher() {
                 <Input
                   id="panNumber"
                   value={formData.panNumber}
-                  onChange={(e) => handleInputChange("panNumber", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("panNumber", e.target.value)
+                  }
                   placeholder="301234567"
                 />
               </div>
@@ -430,16 +479,25 @@ export default function EditTeacher() {
                 <Input
                   id="emergencyContact"
                   value={formData.emergencyContact}
-                  onChange={(e) => handleInputChange("emergencyContact", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("emergencyContact", e.target.value)
+                  }
                   placeholder="98XXXXXXXX"
                 />
               </div>
               <div>
-                <Label htmlFor="emergencyContactRelation">Emergency Contact Relation</Label>
+                <Label htmlFor="emergencyContactRelation">
+                  Emergency Contact Relation
+                </Label>
                 <Input
                   id="emergencyContactRelation"
                   value={formData.emergencyContactRelation}
-                  onChange={(e) => handleInputChange("emergencyContactRelation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "emergencyContactRelation",
+                      e.target.value
+                    )
+                  }
                   placeholder="Spouse, Parent, Sibling"
                 />
               </div>
@@ -448,7 +506,9 @@ export default function EditTeacher() {
                 <Input
                   id="bankAccount"
                   value={formData.bankAccount}
-                  onChange={(e) => handleInputChange("bankAccount", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("bankAccount", e.target.value)
+                  }
                   placeholder="Account number"
                 />
               </div>
@@ -457,7 +517,9 @@ export default function EditTeacher() {
                 <Input
                   id="bankName"
                   value={formData.bankName}
-                  onChange={(e) => handleInputChange("bankName", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("bankName", e.target.value)
+                  }
                   placeholder="Nepal Bank Limited"
                 />
               </div>
@@ -477,8 +539,8 @@ export default function EditTeacher() {
 
         {/* Submit Buttons */}
         <div className="flex justify-end gap-4">
-          <Button 
-            type="button" 
+          <Button
+            type="button"
             variant="outline"
             onClick={() => window.history.back()}
           >
