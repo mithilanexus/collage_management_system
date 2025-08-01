@@ -1,160 +1,82 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Search, 
-  Plus, 
-  Eye, 
-  Edit, 
-  Trash2, 
+import {
+  Search,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
   GraduationCap,
   Phone,
   Mail,
   Calendar,
   BookOpen,
-  User
+  User,
 } from "lucide-react";
-
-// Mock data for students (Nepali college system fields)
-const mockStudents = [
-  {
-    id: 1,
-    studentId: "STU2024001",
-    firstName: "Anil",
-    lastName: "Shrestha",
-    fatherName: "Ram Bahadur Shrestha",
-    motherName: "Sita Shrestha",
-    dateOfBirth: "2006-05-15",
-    gender: "Male",
-    caste: "Newar",
-    religion: "Hindu",
-    nationality: "Nepali",
-    phone: "9841234567",
-    email: "anil.shrestha@student.edu.np",
-    permanentAddress: "Kathmandu-10, Bagbazar",
-    temporaryAddress: "Kathmandu-10, Bagbazar",
-    district: "Kathmandu",
-    province: "Bagmati Province",
-    guardianName: "Ram Bahadur Shrestha",
-    guardianRelation: "Father",
-    guardianPhone: "9841234567",
-    guardianOccupation: "Business",
-    class: "Grade 12",
-    section: "A",
-    rollNumber: "15",
-    admissionDate: "2023-04-15",
-    previousSchool: "Shree Secondary School",
-    slcBoard: "NEB",
-    slcYear: "2022",
-    slcGpa: "3.85",
-    bloodGroup: "A+",
-    status: "Active",
-    hostelResident: false,
-    transportUser: true,
-    scholarshipHolder: false
-  },
-  {
-    id: 2,
-    studentId: "STU2024002",
-    firstName: "Priya",
-    lastName: "Poudel",
-    fatherName: "Hari Prasad Poudel",
-    motherName: "Gita Poudel",
-    dateOfBirth: "2007-08-22",
-    gender: "Female",
-    caste: "Brahmin",
-    religion: "Hindu",
-    nationality: "Nepali",
-    phone: "9841234568",
-    email: "priya.poudel@student.edu.np",
-    permanentAddress: "Pokhara-15, Lakeside",
-    temporaryAddress: "Kathmandu-5, New Baneshwor",
-    district: "Kaski",
-    province: "Gandaki Province",
-    guardianName: "Hari Prasad Poudel",
-    guardianRelation: "Father",
-    guardianPhone: "9841234568",
-    guardianOccupation: "Teacher",
-    class: "Grade 11",
-    section: "A",
-    rollNumber: "08",
-    admissionDate: "2023-04-20",
-    previousSchool: "Shree Higher Secondary School",
-    slcBoard: "NEB",
-    slcYear: "2023",
-    slcGpa: "3.92",
-    bloodGroup: "B+",
-    status: "Active",
-    hostelResident: true,
-    transportUser: false,
-    scholarshipHolder: true
-  },
-  {
-    id: 3,
-    studentId: "STU2024003",
-    firstName: "Rajesh",
-    lastName: "Gurung",
-    fatherName: "Krishna Bahadur Gurung",
-    motherName: "Maya Gurung",
-    dateOfBirth: "2008-12-10",
-    gender: "Male",
-    caste: "Gurung",
-    religion: "Buddhist",
-    nationality: "Nepali",
-    phone: "9841234569",
-    email: "rajesh.gurung@student.edu.np",
-    permanentAddress: "Gorkha-5, Arughat",
-    temporaryAddress: "Gorkha-5, Arughat",
-    district: "Gorkha",
-    province: "Gandaki Province",
-    guardianName: "Krishna Bahadur Gurung",
-    guardianRelation: "Father",
-    guardianPhone: "9841234569",
-    guardianOccupation: "Farmer",
-    class: "Grade 9",
-    section: "B",
-    rollNumber: "12",
-    admissionDate: "2023-04-25",
-    previousSchool: "Shree Basic School",
-    slcBoard: "NEB",
-    slcYear: "2023",
-    slcGpa: "3.45",
-    bloodGroup: "O+",
-    status: "Active",
-    hostelResident: false,
-    transportUser: true,
-    scholarshipHolder: true
-  }
-];
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import DeleteDialog from "@/components/shared/DeleteDialog";
 
 export default function StudentsManagement() {
-  const [students, setStudents] = useState(mockStudents);
+  const [students, setStudents] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const router = useRouter();
 
-  const filteredStudents = students.filter(student =>
-    student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.class.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.phone.includes(searchTerm) ||
-    student.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStudents =
+    students?.filter(
+      (student) =>
+        student.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.studentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.class?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.phone?.includes(searchTerm) ||
+        student.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    ) || [];
 
   const handleView = (student) => {
     setSelectedStudent(student);
   };
+  useEffect(() => {
+    fetchStudentsData();
+  }, []);
 
   const handleEdit = (studentId) => {
-    window.location.href = `/admin/management/students/${studentId}/edit`;
+    router.push(`/admin/management/students/${studentId}/edit`);
   };
 
-  const handleDelete = (studentId) => {
-    if (confirm("Are you sure you want to delete this student record?")) {
-      setStudents(students.filter(s => s.id !== studentId));
+  const handleDelete = async (studentId) => {
+    try {
+      setStudents(students.filter((s) => s._id !== studentId));
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/students/${studentId}`,
+        {
+          method: "DELETE",
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Student deleted successfully");
+      }
+    } catch (error) {
+      toast.error("Failed to delete student");
+    }
+  };
+
+  const fetchStudentsData = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/students`
+      );
+      const data = await res.json();
+      setStudents([...data.data]);
+    } catch (error) {
+      console.error("Error fetching students data:", error);
+      toast.error("Failed to fetch students data");
     }
   };
 
@@ -163,10 +85,19 @@ export default function StudentsManagement() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Students Management</h1>
-          <p className="text-muted-foreground">Manage student records and information</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+            Students Management
+          </h1>
+          <p className="text-muted-foreground">
+            Manage student records and information
+          </p>
         </div>
-        <Button onClick={() => window.location.href = '/admin/management/students/add'} className="flex items-center gap-2">
+        <Button
+          onClick={() =>
+            (window.location.href = "/admin/management/students/add")
+          }
+          className="flex items-center gap-2"
+        >
           <Plus className="w-4 h-4" />
           Add New Student
         </Button>
@@ -187,14 +118,16 @@ export default function StudentsManagement() {
         </div>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-primary">{students.length}</div>
+            <div className="text-2xl font-bold text-primary">
+              {students.length}
+            </div>
             <div className="text-sm text-muted-foreground">Total Students</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-green-600">
-              {students.filter(s => s.status === "Active").length}
+              {students.filter((s) => s.status === "Active").length}
             </div>
             <div className="text-sm text-muted-foreground">Active Students</div>
           </CardContent>
@@ -222,11 +155,15 @@ export default function StudentsManagement() {
               </thead>
               <tbody>
                 {filteredStudents.map((student) => (
-                  <tr key={student.id} className="border-b hover:bg-muted/50">
+                  <tr key={student._id} className="border-b hover:bg-muted/50">
                     <td className="p-4">
                       <div>
-                        <div className="font-medium">{student.firstName} {student.lastName}</div>
-                        <div className="text-sm text-muted-foreground">{student.email}</div>
+                        <div className="font-medium">
+                          {student.firstName} {student.lastName}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {student.email}
+                        </div>
                       </div>
                     </td>
                     <td className="p-4">
@@ -237,7 +174,9 @@ export default function StudentsManagement() {
                     <td className="p-4">
                       <div>
                         <div className="font-medium">{student.class}</div>
-                        <div className="text-sm text-muted-foreground">Section {student.section} - Roll {student.rollNumber}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Section {student.section} - Roll {student.rollNumber}
+                        </div>
                       </div>
                     </td>
                     <td className="p-4">
@@ -245,20 +184,28 @@ export default function StudentsManagement() {
                         <Phone className="w-3 h-3" />
                         <span className="text-sm">{student.phone}</span>
                       </div>
-                      <div className="text-sm text-muted-foreground">{student.district}</div>
-                    </td>
-                    <td className="p-4">
-                      <div>
-                        <div className="font-medium text-sm">{student.guardianName}</div>
-                        <div className="text-sm text-muted-foreground">{student.guardianRelation}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {student.district}
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        student.status === "Active" 
-                          ? "bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-300"
-                          : "bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-300"
-                      }`}>
+                      <div>
+                        <div className="font-medium text-sm">
+                          {student.guardianName}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {student.guardianRelation}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          student.status === "Active"
+                            ? "bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-300"
+                            : "bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-300"
+                        }`}
+                      >
                         {student.status}
                       </span>
                     </td>
@@ -274,18 +221,13 @@ export default function StudentsManagement() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleEdit(student.id)}
+                          onClick={() => handleEdit(student._id)}
                         >
                           <Edit className="w-3 h-3" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(student.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                        <DeleteDialog
+                          handleDelete={() => handleDelete(student._id)}
+                        />
                       </div>
                     </td>
                   </tr>
@@ -311,27 +253,39 @@ export default function StudentsManagement() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className="text-sm font-medium">Full Name</label>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.firstName} {selectedStudent.lastName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStudent.firstName} {selectedStudent.lastName}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Student ID</label>
-                  <p className="text-sm text-muted-foreground font-mono">{selectedStudent.studentId}</p>
+                  <p className="text-sm text-muted-foreground font-mono">
+                    {selectedStudent.studentId}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Date of Birth</label>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.dateOfBirth}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStudent.dateOfBirth}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Gender</label>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.gender}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStudent.gender}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Caste</label>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.caste}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStudent.caste}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Religion</label>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.religion}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStudent.religion}
+                  </p>
                 </div>
               </div>
 
@@ -341,27 +295,43 @@ export default function StudentsManagement() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <label className="text-sm font-medium">Class</label>
-                    <p className="text-sm text-muted-foreground">{selectedStudent.class}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStudent.class}
+                    </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium">Section</label>
-                    <p className="text-sm text-muted-foreground">{selectedStudent.section}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStudent.section}
+                    </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium">Roll Number</label>
-                    <p className="text-sm text-muted-foreground">{selectedStudent.rollNumber}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStudent.rollNumber}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Admission Date</label>
-                    <p className="text-sm text-muted-foreground">{selectedStudent.admissionDate}</p>
+                    <label className="text-sm font-medium">
+                      Admission Date
+                    </label>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStudent.admissionDate}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Previous School</label>
-                    <p className="text-sm text-muted-foreground">{selectedStudent.previousSchool}</p>
+                    <label className="text-sm font-medium">
+                      Previous School
+                    </label>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStudent.previousSchool}
+                    </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium">SLC GPA</label>
-                    <p className="text-sm text-muted-foreground">{selectedStudent.slcGpa}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStudent.slcGpa}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -372,28 +342,41 @@ export default function StudentsManagement() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium">Father's Name</label>
-                    <p className="text-sm text-muted-foreground">{selectedStudent.fatherName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStudent.fatherName}
+                    </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium">Mother's Name</label>
-                    <p className="text-sm text-muted-foreground">{selectedStudent.motherName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStudent.motherName}
+                    </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium">Guardian Name</label>
-                    <p className="text-sm text-muted-foreground">{selectedStudent.guardianName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStudent.guardianName}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Guardian Occupation</label>
-                    <p className="text-sm text-muted-foreground">{selectedStudent.guardianOccupation}</p>
+                    <label className="text-sm font-medium">
+                      Guardian Occupation
+                    </label>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStudent.guardianOccupation}
+                    </p>
                   </div>
                 </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setSelectedStudent(null)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedStudent(null)}
+                >
                   Close
                 </Button>
-                <Button onClick={() => handleEdit(selectedStudent.id)}>
+                <Button onClick={() => handleEdit(selectedStudent._id)}>
                   Edit Student
                 </Button>
               </div>

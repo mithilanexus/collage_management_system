@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function AddStudent() {
   const [formData, setFormData] = useState({
@@ -60,16 +62,34 @@ export default function AddStudent() {
     emergencyContactRelation: "",
     remarks: ""
   });
+  const router = useRouter()
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Student data:", formData);
-    alert("Student added successfully!");
-    window.location.href = "/admin/management/students";
+    try{
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/students`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Student added successfully");
+        router.push("/admin/management/students");
+      }
+    }catch(error){
+      toast.error("Failed to add student information. Please try again.");
+
+    }
   };
 
   const provinces = [
