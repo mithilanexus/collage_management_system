@@ -3,78 +3,162 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { 
-  Phone, 
-  Mail, 
-  MapPin, 
+import {
+  Phone,
+  Mail,
+  MapPin,
   Clock,
   Send,
   MessageSquare,
   Building,
-  Users
+  Users,
+  CheckCircle,
+  Globe,
+  Calendar,
+  ArrowRight,
+  Star,
+  Headphones
 } from "lucide-react";
+import { Zap } from "lucide-react";
 
 export default function Contact() {
   return (
     <div className="min-h-screen bg-background">
-     
-      
-      {/* Hero Section */}
-      <section className="pt-20 pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center space-y-6">
-            <h1 className="text-4xl md:text-5xl font-bold">Contact Us</h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Get in touch with EduTech College. We're here to help with admissions, 
-              general inquiries, and any questions you may have.
-            </p>
+      {/* Ultra-Modern Hero Section */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        {/* Subtle Background */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-white to-blue-50"></div>
+          {/* Subtle Floating Elements */}
+          <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-100/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-100/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gray-100/10 rounded-full blur-3xl animate-pulse delay-500"></div>
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="space-y-12">
+            {/* Floating Badge */}
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/80 backdrop-blur-xl border border-emerald-200/50 rounded-full text-sm font-medium shadow-2xl">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <MessageSquare className="w-4 h-4 text-emerald-600" />
+              <span className="text-emerald-600 font-bold">
+                We&apos;re Here to Help 24/7
+              </span>
+            </div>
+
+            {/* Main Title with Better Contrast */}
+            <div className="space-y-6">
+              <h1 className="text-5xl sm:text-6xl lg:text-8xl font-black">
+                <span className="block text-gray-900 drop-shadow-sm">Get in</span>
+                <span className="block bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent drop-shadow-sm">
+                  Touch
+                </span>
+              </h1>
+
+              <div className="space-y-6">
+                <p className="text-xl sm:text-2xl text-gray-700 max-w-5xl mx-auto leading-relaxed">
+                  Ready to <span className="font-bold text-emerald-600">Transform Your Future?</span>
+                  <span className="font-bold text-blue-600"> We&apos;re Here to Guide You</span>
+                </p>
+                <p className="text-lg sm:text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+                  Our dedicated admissions team and support staff are ready to provide personalized assistance
+                  for your educational journey. Reach out today and take the first step towards excellence.
+                </p>
+              </div>
+            </div>
+
+            {/* Support Features with Animation */}
+            <div className="flex flex-wrap justify-center gap-6 pt-12">
+              {[
+                { icon: Headphones, text: "24/7 Support", color: "from-emerald-400 to-green-400" },
+                { icon: Zap, text: "Quick Response", color: "from-blue-400 to-cyan-400" },
+                { icon: Users, text: "Expert Guidance", color: "from-purple-400 to-pink-400" },
+                { icon: CheckCircle, text: "Personalized Help", color: "from-orange-400 to-red-400" }
+              ].map((feature, index) => (
+                <div key={index} className="group relative">
+                  <div className="flex items-center gap-3 px-6 py-3 bg-white/5 backdrop-blur-2xl rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-500 hover:scale-110 hover:-translate-y-1">
+                    <div className={`p-2 bg-gradient-to-r ${feature.color} rounded-xl shadow-lg group-hover:rotate-12 transition-transform duration-300`}>
+                      <feature.icon className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-white font-semibold">{feature.text}</span>
+                  </div>
+                  {/* Glow Effect */}
+                  <div className={`absolute inset-0 bg-gradient-to-r ${feature.color} rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur-xl`}></div>
+                </div>
+              ))}
+            </div>
+
+            {/* Scroll Indicator */}
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+              <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center">
+                <div className="w-1 h-3 bg-white/50 rounded-full mt-2 animate-pulse"></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Contact Info Cards */}
-      <section className="py-16 bg-muted/30">
+      <section className="py-20 bg-gradient-to-r from-primary/5 via-background to-secondary/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-6">Multiple Ways to Reach Us</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Choose the most convenient way to get in touch with our team
+            </p>
+          </div>
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
                 icon: Phone,
-                title: "Phone",
-                details: ["+1 (555) 123-4567", "+1 (555) 123-4568"],
-                color: "text-blue-500"
+                title: "Call Us",
+                details: ["+977-1-4567890", "+977-1-4567891"],
+                color: "blue",
+                bgColor: "bg-blue-100",
+                iconColor: "text-blue-600",
+                description: "Speak directly with our admissions team"
               },
               {
                 icon: Mail,
-                title: "Email",
-                details: ["info@edutech.edu", "admissions@edutech.edu"],
-                color: "text-green-500"
+                title: "Email Us",
+                details: ["info@edutech.edu.np", "admissions@edutech.edu.np"],
+                color: "green",
+                bgColor: "bg-green-100",
+                iconColor: "text-green-600",
+                description: "Get detailed responses to your queries"
               },
               {
                 icon: MapPin,
-                title: "Address",
-                details: ["123 Education Street", "Knowledge City, KC 12345"],
-                color: "text-red-500"
+                title: "Visit Us",
+                details: ["Kathmandu, Nepal", "New Baneshwor, Ward 10"],
+                color: "red",
+                bgColor: "bg-red-100",
+                iconColor: "text-red-600",
+                description: "Tour our beautiful campus facilities"
               },
               {
                 icon: Clock,
                 title: "Office Hours",
-                details: ["Mon-Fri: 9:00 AM - 5:00 PM", "Sat: 9:00 AM - 1:00 PM"],
-                color: "text-purple-500"
+                details: ["Sun-Fri: 9:00 AM - 5:00 PM", "Sat: 9:00 AM - 1:00 PM"],
+                color: "purple",
+                bgColor: "bg-purple-100",
+                iconColor: "text-purple-600",
+                description: "We're here when you need us"
               }
             ].map((contact, index) => (
-              <Card key={index} className="text-center p-6 hover:shadow-lg transition-shadow">
-                <CardContent className="space-y-4">
-                  <div className={`w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center`}>
-                    <contact.icon className={`h-6 w-6 ${contact.color}`} />
-                  </div>
-                  <h3 className="font-semibold text-lg">{contact.title}</h3>
-                  <div className="space-y-1">
-                    {contact.details.map((detail, i) => (
-                      <p key={i} className="text-sm text-muted-foreground">{detail}</p>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <div key={index} className="group text-center p-8 bg-background/80 backdrop-blur-sm border border-border/50 rounded-3xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
+                <div className={`w-16 h-16 mx-auto ${contact.bgColor} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                  <contact.icon className={`h-8 w-8 ${contact.iconColor}`} />
+                </div>
+                <h3 className="text-xl font-bold mb-3">{contact.title}</h3>
+                <p className="text-sm text-muted-foreground mb-4">{contact.description}</p>
+                <div className="space-y-2">
+                  {contact.details.map((detail, i) => (
+                    <p key={i} className="text-sm font-medium text-foreground">{detail}</p>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </div>
