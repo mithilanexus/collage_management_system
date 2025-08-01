@@ -26,6 +26,17 @@ import {
   Settings,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Mock data - in real app, this would come from API
 // const mockParentData = {
@@ -137,8 +148,8 @@ export default function ParentDetail() {
   // Filter students based on search term
   useEffect(() => {
     if (!parent.students) return;
-
-    const filtered = parent.students.filter(
+    console.log(parent.students);
+    const filtered = parent.students?.filter(
       (student) =>
         student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.studentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -185,16 +196,28 @@ export default function ParentDetail() {
     setShowAddStudentForm(true);
   };
 
-  const handleRemoveStudent = (studentId) => {
-    if (
-      confirm("Are you sure you want to remove this student from this parent?")
-    ) {
-      const updatedStudents = parent.students.filter((s) => s.id !== studentId);
+  const handleRemoveStudent = async (studentId) => {
+    try {
       setParent({
         ...parent,
-        students: updatedStudents,
-        studentsCount: updatedStudents.length,
+        students: parent.students.filter((s) => s._id !== studentId),
+        studentsCount: parent.students.length - 1,
       });
+      setFilteredStudents(parent.students.filter((s) => s._id !== studentId));
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent/${parentId}/add-student/${studentId}`,
+        {
+          method: "DELETE",
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Student removed successfully!");
+      } else {
+        toast.error("Failed to remove student");
+      }
+    } catch (error) {
+      toast.error("Failed to remove student");
     }
   };
 
@@ -210,13 +233,14 @@ export default function ParentDetail() {
 
     if (editingStudent) {
       // Update existing student
-      const updatedStudents = parent.students.map((s) =>
-        s.id === editingStudent.id ? { ...newStudentData } : s
-      );
-      setParent({ ...parent, students: updatedStudents });
+      const updatedStudents = parent.students.filter((s) => {
+        return s._id === editingStudent._id;
+      });
+      console.log(updatedStudents[0]);
+      // setParent({ ...parent, students: updatedStudents[0] });
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent/${parentId}/add-student/${updatedStudents._id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent/${parentId}/add-student/${updatedStudents[0]._id}`,
         {
           method: "PUT",
           headers: {
@@ -225,6 +249,19 @@ export default function ParentDetail() {
           body: JSON.stringify(newStudentData),
         }
       );
+      const data = await res.json();
+      console.log(data);
+      if (data.success) {
+        const updatedStudents = parent.students.map((s) =>
+          s._id === editingStudent._id ? data.data : s
+        );
+        setParent({ ...parent, students: updatedStudents });
+
+        toast.success("Student updated successfully!");
+        setShowAddStudentForm(false);
+      } else {
+        toast.error("Failed to update student");
+      }
     } else {
       // Add new student
       const newStudent = {
@@ -249,8 +286,8 @@ export default function ParentDetail() {
       setFilteredStudents([...parent.students, data.data]);
       console.log(parent);
       if (data.success) {
-        setShowAddStudentForm(false);
         toast.success("Student added successfully!");
+        setShowAddStudentForm(false);
       } else {
         toast.error("Failed to add student");
       }
@@ -654,9 +691,9 @@ export default function ParentDetail() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {filteredStudents.map((student) => (
+                  {filteredStudents.map((student, index) => (
                     <div
-                      key={student._id}
+                      key={index}
                       className="p-4 border border-border rounded-lg hover:bg-muted/50"
                     >
                       <div className="flex items-start justify-between mb-3">
@@ -711,14 +748,39 @@ export default function ParentDetail() {
                           >
                             <Edit className="w-3 h-3" />
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleRemoveStudent(student.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Are you absolutely sure?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will
+                                  permanently delete your account and remove
+                                  your data from our servers.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() =>
+                                    handleRemoveStudent(student._id)
+                                  }
+                                >
+                                  Continue
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
 

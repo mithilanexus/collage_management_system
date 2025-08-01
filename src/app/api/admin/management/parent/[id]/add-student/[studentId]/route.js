@@ -1,3 +1,6 @@
+import parentModel from "@/models/parent/Parent.model";
+import StudentModel from "@/models/student/Student.model";
+
 export async function POST(request, { params }) {
   try {
     const parentId = await params.id;
@@ -24,6 +27,30 @@ export async function POST(request, { params }) {
   } catch (error) {
     return Response.json({
       message: "Failed to add students to parent",
+      success: false,
+      error: error.message,
+    });
+  }
+}
+export async function PUT(request, { params }) {
+  const req = await request.json();
+  try {
+    const studentId = await params.studentId;
+    const student = await StudentModel.findOneAndUpdate(
+      {
+        _id: studentId,
+      },
+      req,
+      { new: true }
+    );
+    return Response.json({
+      message: "Student updated successfully",
+      success: true,
+      data: student,
+    });
+  } catch (error) {
+    return Response.json({
+      message: "Failed to update student",
       success: false,
       error: error.message,
     });

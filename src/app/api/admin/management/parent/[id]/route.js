@@ -1,13 +1,14 @@
 export const dynamic = "force-static";
 import parentModel from "@/models/parent/Parent.model";
+import "@/models/student/Student.model";
 export async function GET(request, { params }) {
   try {
-    const parentId = await params.id;
+    const parentId = params.id; // ✅ no await needed
     const parent = await parentModel
-      .findOne({
-        _id: parentId,
-      }).populate("students")
+      .findOne({ _id: parentId })
+      .populate("students")
       .lean();
+
     return Response.json({
       message: "Parents data retrieved successfully",
       success: true,
@@ -18,7 +19,7 @@ export async function GET(request, { params }) {
       message: "Failed to retrieve parents data",
       success: false,
       data: [],
-      error,
+      error: error.message, // 💡 better to return just the message
     });
   }
 }
