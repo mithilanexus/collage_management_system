@@ -132,7 +132,6 @@ const staffSchema = new Schema(
     timestamps: true,
   }
 );
-
 const staffModel = mongoose.models.Staff || mongoose.model("Staff", staffSchema);
 
 export default staffModel;

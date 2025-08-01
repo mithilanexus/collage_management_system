@@ -1,47 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, UserCheck } from "lucide-react";
+import { toast } from "sonner";
 
 // Mock data - in real app, this would come from API
-const mockStaffData = {
-  1: {
-    id: 1,
-    name: "Shyam Bahadur Magar",
-    employeeId: "STF001",
-    designation: "Office Assistant",
-    department: "Administration Department",
-    qualification: "+2 Pass",
-    experience: "10 years",
-    phone: "9841234571",
-    email: "shyam.magar@college.edu.np",
-    address: "Kathmandu-12, Kalimati",
-    district: "Kathmandu",
-    province: "Bagmati Province",
-    joiningDate: "2014-05-15",
-    salary: "Rs. 35,000",
-    workingHours: "10 AM - 5 PM",
-    status: "Permanent",
-    duties: "File Management, Data Entry, Photocopying, Office Cleaning",
-    dateOfBirth: "1985-08-20",
-    gender: "Male",
-    bloodGroup: "B+",
-    maritalStatus: "Married",
-    citizenship: "12-01-71-01238",
-    panNumber: "301234571",
-    emergencyContact: "9841234572",
-    emergencyContactRelation: "Wife",
-    bankAccount: "1234567891",
-    bankName: "Nepal Bank Limited",
-    remarks: "Reliable staff member, good with office work"
-  }
-};
 
 export default function EditStaff() {
   const params = useParams();
@@ -73,46 +42,85 @@ export default function EditStaff() {
     emergencyContactRelation: "",
     bankAccount: "",
     bankName: "",
-    remarks: ""
+    remarks: "",
   });
 
   useEffect(() => {
-    // Simulate API call to fetch staff data
-    const staffId = parseInt(params.id);
-    const staffData = mockStaffData[staffId];
-    
-    setTimeout(() => {
-      if (staffData) {
-        setFormData(staffData);
-      }
-      setLoading(false);
-    }, 500);
+    fetchStaffData();
   }, [params.id]);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
+  const router = useRouter();
 
-  const handleSubmit = (e) => {
+  const fetchStaffData = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/staff/${params.id}`
+      );
+      const data = await res.json();
+      setFormData({ ...data.data });
+      setLoading(false);
+    } catch (error) {
+      toast.error("Failed to fetch staff data");
+    }
+  };
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Updated staff data:", formData);
-    alert("Staff information updated successfully!");
-    window.location.href = "/admin/management/staff";
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/staff/${params.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Staff updated successfully");
+        router.push("/admin/management/staff");
+      }
+    } catch (error) {
+      toast.error("Failed to update staff information");
+    }
   };
 
   const provinces = [
-    "Province No. 1", "Madhesh Province", "Bagmati Province", "Gandaki Province", 
-    "Lumbini Province", "Karnali Province", "Sudurpashchim Province"
+    "Province No. 1",
+    "Madhesh Province",
+    "Bagmati Province",
+    "Gandaki Province",
+    "Lumbini Province",
+    "Karnali Province",
+    "Sudurpashchim Province",
   ];
 
   const departments = [
-    "Administration Department", "Library Department", "Science Department", "Service Department",
-    "Security Department", "IT Department", "Finance Department", "Maintenance Department"
+    "Administration Department",
+    "Library Department",
+    "Science Department",
+    "Service Department",
+    "Security Department",
+    "IT Department",
+    "Finance Department",
+    "Maintenance Department",
   ];
 
   const designations = [
-    "Office Assistant", "Librarian", "Lab Assistant", "Cleaning Staff", "Security Guard",
-    "IT Support", "Accountant", "Maintenance Worker", "Driver", "Cook"
+    "Office Assistant",
+    "Librarian",
+    "Lab Assistant",
+    "Cleaning Staff",
+    "Security Guard",
+    "IT Support",
+    "Accountant",
+    "Maintenance Worker",
+    "Driver",
+    "Cook",
   ];
 
   const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -132,16 +140,20 @@ export default function EditStaff() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
           onClick={() => window.history.back()}
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Edit Staff</h1>
-          <p className="text-muted-foreground">Update staff member information</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+            Edit Staff
+          </h1>
+          <p className="text-muted-foreground">
+            Update staff member information
+          </p>
         </div>
       </div>
 
@@ -168,7 +180,9 @@ export default function EditStaff() {
                 <Input
                   id="employeeId"
                   value={formData.employeeId}
-                  onChange={(e) => handleInputChange("employeeId", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("employeeId", e.target.value)
+                  }
                   placeholder="STF001"
                   disabled
                 />
@@ -178,12 +192,16 @@ export default function EditStaff() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.designation}
-                  onChange={(e) => handleInputChange("designation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("designation", e.target.value)
+                  }
                   required
                 >
                   <option value="">Select Designation</option>
                   {designations.map((designation, index) => (
-                    <option key={index} value={designation}>{designation}</option>
+                    <option key={index} value={designation}>
+                      {designation}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -192,12 +210,16 @@ export default function EditStaff() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.department}
-                  onChange={(e) => handleInputChange("department", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("department", e.target.value)
+                  }
                   required
                 >
                   <option value="">Select Department</option>
                   {departments.map((department, index) => (
-                    <option key={index} value={department}>{department}</option>
+                    <option key={index} value={department}>
+                      {department}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -206,7 +228,9 @@ export default function EditStaff() {
                 <Input
                   id="qualification"
                   value={formData.qualification}
-                  onChange={(e) => handleInputChange("qualification", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("qualification", e.target.value)
+                  }
                   placeholder="+2 Pass, SLC, Bachelor"
                 />
               </div>
@@ -215,7 +239,9 @@ export default function EditStaff() {
                 <Input
                   id="experience"
                   value={formData.experience}
-                  onChange={(e) => handleInputChange("experience", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("experience", e.target.value)
+                  }
                   placeholder="10 years"
                 />
               </div>
@@ -265,7 +291,9 @@ export default function EditStaff() {
                 <Input
                   id="district"
                   value={formData.district}
-                  onChange={(e) => handleInputChange("district", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("district", e.target.value)
+                  }
                   placeholder="Kathmandu"
                   required
                 />
@@ -275,12 +303,16 @@ export default function EditStaff() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.province}
-                  onChange={(e) => handleInputChange("province", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("province", e.target.value)
+                  }
                   required
                 >
                   <option value="">Select Province</option>
                   {provinces.map((province, index) => (
-                    <option key={index} value={province}>{province}</option>
+                    <option key={index} value={province}>
+                      {province}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -301,7 +333,9 @@ export default function EditStaff() {
                   id="joiningDate"
                   type="date"
                   value={formData.joiningDate}
-                  onChange={(e) => handleInputChange("joiningDate", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("joiningDate", e.target.value)
+                  }
                   required
                 />
               </div>
@@ -319,7 +353,9 @@ export default function EditStaff() {
                 <Input
                   id="workingHours"
                   value={formData.workingHours}
-                  onChange={(e) => handleInputChange("workingHours", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("workingHours", e.target.value)
+                  }
                   placeholder="10 AM - 5 PM"
                 />
               </div>
@@ -364,7 +400,9 @@ export default function EditStaff() {
                   id="dateOfBirth"
                   type="date"
                   value={formData.dateOfBirth}
-                  onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("dateOfBirth", e.target.value)
+                  }
                 />
               </div>
               <div>
@@ -385,11 +423,15 @@ export default function EditStaff() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.bloodGroup}
-                  onChange={(e) => handleInputChange("bloodGroup", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("bloodGroup", e.target.value)
+                  }
                 >
                   <option value="">Select Blood Group</option>
                   {bloodGroups.map((group, index) => (
-                    <option key={index} value={group}>{group}</option>
+                    <option key={index} value={group}>
+                      {group}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -398,7 +440,9 @@ export default function EditStaff() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.maritalStatus}
-                  onChange={(e) => handleInputChange("maritalStatus", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("maritalStatus", e.target.value)
+                  }
                 >
                   <option value="">Select Status</option>
                   <option value="Single">Single</option>
@@ -412,7 +456,9 @@ export default function EditStaff() {
                 <Input
                   id="citizenship"
                   value={formData.citizenship}
-                  onChange={(e) => handleInputChange("citizenship", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("citizenship", e.target.value)
+                  }
                   placeholder="12-01-71-01238"
                 />
               </div>
@@ -421,7 +467,9 @@ export default function EditStaff() {
                 <Input
                   id="panNumber"
                   value={formData.panNumber}
-                  onChange={(e) => handleInputChange("panNumber", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("panNumber", e.target.value)
+                  }
                   placeholder="301234571"
                 />
               </div>
@@ -441,16 +489,25 @@ export default function EditStaff() {
                 <Input
                   id="emergencyContact"
                   value={formData.emergencyContact}
-                  onChange={(e) => handleInputChange("emergencyContact", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("emergencyContact", e.target.value)
+                  }
                   placeholder="98XXXXXXXX"
                 />
               </div>
               <div>
-                <Label htmlFor="emergencyContactRelation">Emergency Contact Relation</Label>
+                <Label htmlFor="emergencyContactRelation">
+                  Emergency Contact Relation
+                </Label>
                 <Input
                   id="emergencyContactRelation"
                   value={formData.emergencyContactRelation}
-                  onChange={(e) => handleInputChange("emergencyContactRelation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "emergencyContactRelation",
+                      e.target.value
+                    )
+                  }
                   placeholder="Spouse, Parent, Sibling"
                 />
               </div>
@@ -459,7 +516,9 @@ export default function EditStaff() {
                 <Input
                   id="bankAccount"
                   value={formData.bankAccount}
-                  onChange={(e) => handleInputChange("bankAccount", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("bankAccount", e.target.value)
+                  }
                   placeholder="Account number"
                 />
               </div>
@@ -468,7 +527,9 @@ export default function EditStaff() {
                 <Input
                   id="bankName"
                   value={formData.bankName}
-                  onChange={(e) => handleInputChange("bankName", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("bankName", e.target.value)
+                  }
                   placeholder="Nepal Bank Limited"
                 />
               </div>
@@ -488,8 +549,8 @@ export default function EditStaff() {
 
         {/* Submit Buttons */}
         <div className="flex justify-end gap-4">
-          <Button 
-            type="button" 
+          <Button
+            type="button"
             variant="outline"
             onClick={() => window.history.back()}
           >

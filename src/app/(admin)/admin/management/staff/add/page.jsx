@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, UserCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function AddStaff() {
   const [formData, setFormData] = useState({
@@ -17,21 +19,21 @@ export default function AddStaff() {
     department: "",
     qualification: "",
     experience: "",
-    
+
     // Contact Information
     phone: "",
     email: "",
     address: "",
     district: "",
     province: "",
-    
+
     // Work Information
     joiningDate: "",
     salary: "",
     workingHours: "",
     status: "",
     duties: "",
-    
+
     // Personal Information
     dateOfBirth: "",
     gender: "",
@@ -39,39 +41,75 @@ export default function AddStaff() {
     maritalStatus: "",
     citizenship: "",
     panNumber: "",
-    
+
     // Additional Information
     emergencyContact: "",
     emergencyContactRelation: "",
     bankAccount: "",
     bankName: "",
-    remarks: ""
+    remarks: "",
   });
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
+  const router = useRouter();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Staff data:", formData);
-    alert("Staff member added successfully!");
-    window.location.href = "/admin/management/staff";
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/staff`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Staff added successfully");
+        router.push("/admin/management/staff");
+      }
+    } catch (error) {
+      toast.error("Failed to add staff information. Please try again.");
+    }
   };
 
   const provinces = [
-    "Province No. 1", "Madhesh Province", "Bagmati Province", "Gandaki Province", 
-    "Lumbini Province", "Karnali Province", "Sudurpashchim Province"
+    "Province No. 1",
+    "Madhesh Province",
+    "Bagmati Province",
+    "Gandaki Province",
+    "Lumbini Province",
+    "Karnali Province",
+    "Sudurpashchim Province",
   ];
 
   const departments = [
-    "Administration Department", "Library Department", "Science Department", "Service Department",
-    "Security Department", "IT Department", "Finance Department", "Maintenance Department"
+    "Administration Department",
+    "Library Department",
+    "Science Department",
+    "Service Department",
+    "Security Department",
+    "IT Department",
+    "Finance Department",
+    "Maintenance Department",
   ];
 
   const designations = [
-    "Office Assistant", "Librarian", "Lab Assistant", "Cleaning Staff", "Security Guard",
-    "IT Support", "Accountant", "Maintenance Worker", "Driver", "Cook"
+    "Office Assistant",
+    "Librarian",
+    "Lab Assistant",
+    "Cleaning Staff",
+    "Security Guard",
+    "IT Support",
+    "Accountant",
+    "Maintenance Worker",
+    "Driver",
+    "Cook",
   ];
 
   const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -80,16 +118,20 @@ export default function AddStaff() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
           onClick={() => window.history.back()}
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Add New Staff</h1>
-          <p className="text-muted-foreground">Enter staff member information</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+            Add New Staff
+          </h1>
+          <p className="text-muted-foreground">
+            Enter staff member information
+          </p>
         </div>
       </div>
 
@@ -116,7 +158,9 @@ export default function AddStaff() {
                 <Input
                   id="employeeId"
                   value={formData.employeeId}
-                  onChange={(e) => handleInputChange("employeeId", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("employeeId", e.target.value)
+                  }
                   placeholder="STF001"
                   required
                 />
@@ -126,12 +170,16 @@ export default function AddStaff() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.designation}
-                  onChange={(e) => handleInputChange("designation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("designation", e.target.value)
+                  }
                   required
                 >
                   <option value="">Select Designation</option>
                   {designations.map((designation, index) => (
-                    <option key={index} value={designation}>{designation}</option>
+                    <option key={index} value={designation}>
+                      {designation}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -140,12 +188,16 @@ export default function AddStaff() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.department}
-                  onChange={(e) => handleInputChange("department", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("department", e.target.value)
+                  }
                   required
                 >
                   <option value="">Select Department</option>
                   {departments.map((department, index) => (
-                    <option key={index} value={department}>{department}</option>
+                    <option key={index} value={department}>
+                      {department}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -154,7 +206,9 @@ export default function AddStaff() {
                 <Input
                   id="qualification"
                   value={formData.qualification}
-                  onChange={(e) => handleInputChange("qualification", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("qualification", e.target.value)
+                  }
                   placeholder="+2 Pass, SLC, Bachelor"
                 />
               </div>
@@ -163,7 +217,9 @@ export default function AddStaff() {
                 <Input
                   id="experience"
                   value={formData.experience}
-                  onChange={(e) => handleInputChange("experience", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("experience", e.target.value)
+                  }
                   placeholder="10 years"
                 />
               </div>
@@ -213,7 +269,9 @@ export default function AddStaff() {
                 <Input
                   id="district"
                   value={formData.district}
-                  onChange={(e) => handleInputChange("district", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("district", e.target.value)
+                  }
                   placeholder="Kathmandu"
                   required
                 />
@@ -223,12 +281,16 @@ export default function AddStaff() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.province}
-                  onChange={(e) => handleInputChange("province", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("province", e.target.value)
+                  }
                   required
                 >
                   <option value="">Select Province</option>
                   {provinces.map((province, index) => (
-                    <option key={index} value={province}>{province}</option>
+                    <option key={index} value={province}>
+                      {province}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -249,7 +311,9 @@ export default function AddStaff() {
                   id="joiningDate"
                   type="date"
                   value={formData.joiningDate}
-                  onChange={(e) => handleInputChange("joiningDate", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("joiningDate", e.target.value)
+                  }
                   required
                 />
               </div>
@@ -267,7 +331,9 @@ export default function AddStaff() {
                 <Input
                   id="workingHours"
                   value={formData.workingHours}
-                  onChange={(e) => handleInputChange("workingHours", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("workingHours", e.target.value)
+                  }
                   placeholder="10 AM - 5 PM"
                 />
               </div>
@@ -312,7 +378,9 @@ export default function AddStaff() {
                   id="dateOfBirth"
                   type="date"
                   value={formData.dateOfBirth}
-                  onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("dateOfBirth", e.target.value)
+                  }
                 />
               </div>
               <div>
@@ -333,11 +401,15 @@ export default function AddStaff() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.bloodGroup}
-                  onChange={(e) => handleInputChange("bloodGroup", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("bloodGroup", e.target.value)
+                  }
                 >
                   <option value="">Select Blood Group</option>
                   {bloodGroups.map((group, index) => (
-                    <option key={index} value={group}>{group}</option>
+                    <option key={index} value={group}>
+                      {group}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -346,7 +418,9 @@ export default function AddStaff() {
                 <select
                   className="w-full p-2 border border-border rounded-md"
                   value={formData.maritalStatus}
-                  onChange={(e) => handleInputChange("maritalStatus", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("maritalStatus", e.target.value)
+                  }
                 >
                   <option value="">Select Status</option>
                   <option value="Single">Single</option>
@@ -360,7 +434,9 @@ export default function AddStaff() {
                 <Input
                   id="citizenship"
                   value={formData.citizenship}
-                  onChange={(e) => handleInputChange("citizenship", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("citizenship", e.target.value)
+                  }
                   placeholder="12-01-71-01238"
                 />
               </div>
@@ -369,7 +445,9 @@ export default function AddStaff() {
                 <Input
                   id="panNumber"
                   value={formData.panNumber}
-                  onChange={(e) => handleInputChange("panNumber", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("panNumber", e.target.value)
+                  }
                   placeholder="301234571"
                 />
               </div>
@@ -389,16 +467,25 @@ export default function AddStaff() {
                 <Input
                   id="emergencyContact"
                   value={formData.emergencyContact}
-                  onChange={(e) => handleInputChange("emergencyContact", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("emergencyContact", e.target.value)
+                  }
                   placeholder="98XXXXXXXX"
                 />
               </div>
               <div>
-                <Label htmlFor="emergencyContactRelation">Emergency Contact Relation</Label>
+                <Label htmlFor="emergencyContactRelation">
+                  Emergency Contact Relation
+                </Label>
                 <Input
                   id="emergencyContactRelation"
                   value={formData.emergencyContactRelation}
-                  onChange={(e) => handleInputChange("emergencyContactRelation", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "emergencyContactRelation",
+                      e.target.value
+                    )
+                  }
                   placeholder="Spouse, Parent, Sibling"
                 />
               </div>
@@ -407,7 +494,9 @@ export default function AddStaff() {
                 <Input
                   id="bankAccount"
                   value={formData.bankAccount}
-                  onChange={(e) => handleInputChange("bankAccount", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("bankAccount", e.target.value)
+                  }
                   placeholder="Account number"
                 />
               </div>
@@ -416,7 +505,9 @@ export default function AddStaff() {
                 <Input
                   id="bankName"
                   value={formData.bankName}
-                  onChange={(e) => handleInputChange("bankName", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("bankName", e.target.value)
+                  }
                   placeholder="Nepal Bank Limited"
                 />
               </div>
@@ -436,8 +527,8 @@ export default function AddStaff() {
 
         {/* Submit Buttons */}
         <div className="flex justify-end gap-4">
-          <Button 
-            type="button" 
+          <Button
+            type="button"
             variant="outline"
             onClick={() => window.history.back()}
           >

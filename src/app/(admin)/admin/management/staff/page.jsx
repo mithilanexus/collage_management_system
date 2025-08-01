@@ -1,157 +1,80 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Search, 
-  Plus, 
-  Eye, 
-  Edit, 
-  Trash2, 
+import {
+  Search,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
   UserCheck,
   Phone,
   Mail,
   Calendar,
   Briefcase,
-  Clock
+  Clock,
 } from "lucide-react";
-
-// Mock data for staff (English interface, Nepali college system fields)
-const mockStaff = [
-  {
-    id: 1,
-    name: "Shyam Bahadur Magar",
-    employeeId: "STF001",
-    designation: "Office Assistant",
-    department: "Administration Department",
-    qualification: "+2 Pass",
-    experience: "10 years",
-    phone: "9841234571",
-    email: "shyam.magar@college.edu.np",
-    address: "Kathmandu-12, Kalimati",
-    joiningDate: "2014-05-15",
-    salary: "Rs. 35,000",
-    workingHours: "10 AM - 5 PM",
-    status: "Permanent",
-    citizenship: "12-01-71-01238",
-    panNumber: "301234571",
-    bloodGroup: "B+",
-    maritalStatus: "Married",
-    duties: ["File Management", "Data Entry", "Photocopying", "Office Cleaning"]
-  },
-  {
-    id: 2,
-    name: "Sunita Lama",
-    employeeId: "STF002",
-    designation: "Librarian",
-    department: "Library Department",
-    qualification: "Bachelor (Library Science)",
-    experience: "7 years",
-    phone: "9841234572",
-    email: "sunita.lama@college.edu.np",
-    address: "Lalitpur-8, Kupondole",
-    joiningDate: "2017-03-20",
-    salary: "Rs. 45,000",
-    workingHours: "9 AM - 5 PM",
-    status: "Permanent",
-    citizenship: "23-01-73-01239",
-    panNumber: "301234572",
-    bloodGroup: "A+",
-    maritalStatus: "Single",
-    duties: ["Book Management", "Student Assistance", "Book Purchase", "Digital Resources"]
-  },
-  {
-    id: 3,
-    name: "Rajesh Shrestha",
-    employeeId: "STF003",
-    designation: "Lab Assistant",
-    department: "Science Department",
-    qualification: "Diploma in Science",
-    experience: "5 years",
-    phone: "9841234573",
-    email: "rajesh.shrestha@college.edu.np",
-    address: "Bhaktapur-6, Suryabinayak",
-    joiningDate: "2019-08-10",
-    salary: "Rs. 40,000",
-    workingHours: "8 AM - 4 PM",
-    status: "Temporary",
-    citizenship: "25-01-75-01240",
-    panNumber: "301234573",
-    bloodGroup: "O+",
-    maritalStatus: "Married",
-    duties: ["Lab Preparation", "Equipment Maintenance", "Chemical Management", "Safety Inspection"]
-  },
-  {
-    id: 4,
-    name: "Maya Tamang",
-    employeeId: "STF004",
-    designation: "Cleaning Staff",
-    department: "Service Department",
-    qualification: "Class 8 Pass",
-    experience: "12 years",
-    phone: "9841234574",
-    email: "maya.tamang@college.edu.np",
-    address: "Kathmandu-16, Gokarneshwor",
-    joiningDate: "2012-01-05",
-    salary: "Rs. 25,000",
-    workingHours: "6 AM - 2 PM",
-    status: "Permanent",
-    citizenship: "12-01-69-01241",
-    panNumber: "301234574",
-    bloodGroup: "AB+",
-    maritalStatus: "Married",
-    duties: ["Classroom Cleaning", "Toilet Cleaning", "Campus Cleaning", "Waste Management"]
-  },
-  {
-    id: 5,
-    name: "Dipak Gurung",
-    employeeId: "STF005",
-    designation: "Security Guard",
-    department: "Security Department",
-    qualification: "SLC Pass",
-    experience: "8 years",
-    phone: "9841234575",
-    email: "dipak.gurung@college.edu.np",
-    address: "Kathmandu-25, Budhanilkantha",
-    joiningDate: "2016-06-01",
-    salary: "Rs. 30,000",
-    workingHours: "24 Hours (Shift)",
-    status: "Permanent",
-    citizenship: "12-01-72-01242",
-    panNumber: "301234575",
-    bloodGroup: "B-",
-    maritalStatus: "Married",
-    duties: ["Campus Security", "Gate Inspection", "Visitor Control", "Property Security"]
-  }
-];
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import DeleteDialog from "@/components/shared/DeleteDialog";
 
 export default function StaffManagement() {
-  const [staff, setStaff] = useState(mockStaff);
+  const [staff, setStaff] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStaff, setSelectedStaff] = useState(null);
 
-  const filteredStaff = staff.filter(member =>
-    member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.phone.includes(searchTerm) ||
-    member.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredStaff = staff.filter(
+    (member) =>
+      member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.phone.includes(searchTerm) ||
+      member.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const router = useRouter();
 
+  useEffect(() => {
+    fetchStaffsData();
+  }, []);
   const handleView = (member) => {
     setSelectedStaff(member);
   };
 
   const handleEdit = (staffId) => {
-    window.location.href = `/admin/management/staff/${staffId}/edit`;
+    router.push(`/admin/management/staff/${staffId}/edit`);
   };
 
-  const handleDelete = (staffId) => {
-    if (confirm("Are you sure you want to delete this staff record?")) {
-      setStaff(staff.filter(s => s.id !== staffId));
+  const handleDelete = async (staffId) => {
+    try {
+      setStaff(staff.filter((s) => s._id !== staffId));
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/staff/${staffId}`,
+        {
+          method: "DELETE",
+        }
+      );
+      const data = res.json();
+      if (data.success) {
+        toast.success("Staff deleted successfully");
+      }
+    } catch (error) {
+      toast.error("Failed to delete staff");
+    }
+  };
+  const fetchStaffsData = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/staff`
+      );
+      const data = await res.json();
+      setStaff([...data.data]);
+    } catch (error) {
+      console.error("Error fetching staff data:", error);
+      toast.error("Failed to fetch staff data");
     }
   };
 
@@ -160,10 +83,17 @@ export default function StaffManagement() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Staff Management</h1>
-          <p className="text-muted-foreground">Manage staff records and information</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+            Staff Management
+          </h1>
+          <p className="text-muted-foreground">
+            Manage staff records and information
+          </p>
         </div>
-        <Button onClick={() => window.location.href = '/admin/management/staff/add'} className="flex items-center gap-2">
+        <Button
+          onClick={() => (window.location.href = "/admin/management/staff/add")}
+          className="flex items-center gap-2"
+        >
           <Plus className="w-4 h-4" />
           Add New Staff
         </Button>
@@ -184,14 +114,16 @@ export default function StaffManagement() {
         </div>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-primary">{staff.length}</div>
+            <div className="text-2xl font-bold text-primary">
+              {staff.length}
+            </div>
             <div className="text-sm text-muted-foreground">Total Staff</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-green-600">
-              {staff.filter(s => s.status === "Permanent").length}
+              {staff.filter((s) => s.status === "Permanent").length}
             </div>
             <div className="text-sm text-muted-foreground">Permanent Staff</div>
           </CardContent>
@@ -219,11 +151,13 @@ export default function StaffManagement() {
               </thead>
               <tbody>
                 {filteredStaff.map((member) => (
-                  <tr key={member.id} className="border-b hover:bg-muted/50">
+                  <tr key={member._id} className="border-b hover:bg-muted/50">
                     <td className="p-4">
                       <div>
                         <div className="font-medium">{member.name}</div>
-                        <div className="text-sm text-muted-foreground">{member.qualification}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {member.qualification}
+                        </div>
                       </div>
                     </td>
                     <td className="p-4">
@@ -233,7 +167,9 @@ export default function StaffManagement() {
                     </td>
                     <td className="p-4">
                       <div className="font-medium">{member.designation}</div>
-                      <div className="text-sm text-muted-foreground">{member.experience}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {member.experience}
+                      </div>
                     </td>
                     <td className="p-4">
                       <div className="font-medium">{member.department}</div>
@@ -249,11 +185,13 @@ export default function StaffManagement() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        member.status === "Permanent" 
-                          ? "bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-300"
-                          : "bg-yellow-100 text-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-300"
-                      }`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          member.status === "Permanent"
+                            ? "bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-300"
+                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-300"
+                        }`}
+                      >
                         {member.status}
                       </span>
                     </td>
@@ -269,18 +207,22 @@ export default function StaffManagement() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleEdit(member.id)}
+                          onClick={() => handleEdit(member._id)}
                         >
                           <Edit className="w-3 h-3" />
                         </Button>
-                        <Button
+                        {/* <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleDelete(member.id)}
+                          onClick={() => handleDelete(member._id)}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="w-3 h-3" />
-                        </Button>
+                        </Button> */}
+                        <DeleteDialog
+                          handleDelete={handleDelete}
+                          id={member._id}
+                        />
                       </div>
                     </td>
                   </tr>
@@ -306,27 +248,39 @@ export default function StaffManagement() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className="text-sm font-medium">Name</label>
-                  <p className="text-sm text-muted-foreground">{selectedStaff.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStaff.name}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Employee ID</label>
-                  <p className="text-sm text-muted-foreground font-mono">{selectedStaff.employeeId}</p>
+                  <p className="text-sm text-muted-foreground font-mono">
+                    {selectedStaff.employeeId}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Designation</label>
-                  <p className="text-sm text-muted-foreground">{selectedStaff.designation}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStaff.designation}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Department</label>
-                  <p className="text-sm text-muted-foreground">{selectedStaff.department}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStaff.department}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Qualification</label>
-                  <p className="text-sm text-muted-foreground">{selectedStaff.qualification}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStaff.qualification}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Experience</label>
-                  <p className="text-sm text-muted-foreground">{selectedStaff.experience}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedStaff.experience}
+                  </p>
                 </div>
               </div>
 
@@ -336,15 +290,21 @@ export default function StaffManagement() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium">Phone Number</label>
-                    <p className="text-sm text-muted-foreground">{selectedStaff.phone}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStaff.phone}
+                    </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium">Email</label>
-                    <p className="text-sm text-muted-foreground">{selectedStaff.email}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStaff.email}
+                    </p>
                   </div>
                   <div className="md:col-span-2">
                     <label className="text-sm font-medium">Address</label>
-                    <p className="text-sm text-muted-foreground">{selectedStaff.address}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStaff.address}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -355,19 +315,27 @@ export default function StaffManagement() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium">Joining Date</label>
-                    <p className="text-sm text-muted-foreground">{selectedStaff.joiningDate}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStaff.joiningDate}
+                    </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium">Salary</label>
-                    <p className="text-sm text-muted-foreground">{selectedStaff.salary}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStaff.salary}
+                    </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium">Working Hours</label>
-                    <p className="text-sm text-muted-foreground">{selectedStaff.workingHours}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStaff.workingHours}
+                    </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium">Status</label>
-                    <p className="text-sm text-muted-foreground">{selectedStaff.status}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStaff.status}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -379,17 +347,22 @@ export default function StaffManagement() {
                   {selectedStaff.duties.map((duty, index) => (
                     <div key={index} className="flex items-center gap-2">
                       <Briefcase className="w-3 h-3 text-primary" />
-                      <span className="text-sm text-muted-foreground">{duty}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {duty}
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setSelectedStaff(null)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedStaff(null)}
+                >
                   Close
                 </Button>
-                <Button onClick={() => handleEdit(selectedStaff.id)}>
+                <Button onClick={() => handleEdit(selectedStaff._id)}>
                   Edit Staff
                 </Button>
               </div>
