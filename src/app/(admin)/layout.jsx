@@ -6,6 +6,7 @@ import { Menu } from "lucide-react";
 import { useLoginUserData } from "@/hooks/LoginedUserData";
 import { useRouter } from "next/navigation";
 import UnauthorizedPage from "../unauthorized/page";
+import { AdminThemeToggle } from "@/components/theme-toggle";
 
 export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -28,7 +29,7 @@ export default function AdminLayout({ children }) {
               <Menu className="w-5 h-5" />
             </button>
             <h1 className="text-lg font-semibold">Admin Panel</h1>
-            <div className="w-9"></div> {/* Spacer for centering */}
+            <AdminThemeToggle />
           </div>
 
           <div className="p-4 lg:p-6">{children}</div>

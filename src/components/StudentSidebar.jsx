@@ -27,6 +27,7 @@ import {
   X
 } from "lucide-react";
 import useLogout from "@/utils/useLogout";
+import { AdminThemeToggle } from "@/components/theme-toggle";
 
 export default function StudentSidebar({ isOpen, setIsOpen }) {
   const pathname = usePathname();
@@ -156,13 +157,17 @@ export default function StudentSidebar({ isOpen, setIsOpen }) {
                 <p className="text-xs text-muted-foreground">EduTech College</p>
               </div>
             </div>
-            {/* Mobile Close Button */}
-            <button
-              onClick={() => setIsOpen(false)}
-              className="lg:hidden p-2 rounded-lg hover:bg-muted/50 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Theme Toggle */}
+              <AdminThemeToggle />
+              {/* Mobile Close Button */}
+              <button
+                onClick={() => setIsOpen(false)}
+                className="lg:hidden p-2 rounded-lg hover:bg-muted/50 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
 

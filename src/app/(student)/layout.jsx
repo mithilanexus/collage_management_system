@@ -3,6 +3,7 @@
 import { useState } from "react";
 import StudentSidebar from "@/components/StudentSidebar";
 import { Menu, GraduationCap } from "lucide-react";
+import { AdminThemeToggle } from "@/components/theme-toggle";
 
 export default function StudentLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -24,7 +25,7 @@ export default function StudentLayout({ children }) {
             <GraduationCap className="w-5 h-5 text-blue-600" />
             <h1 className="text-lg font-semibold">Student Portal</h1>
           </div>
-          <div className="w-9"></div> {/* Spacer for centering */}
+          <AdminThemeToggle />
         </div>
 
         <div className="p-4 lg:p-6">

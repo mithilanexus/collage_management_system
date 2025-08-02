@@ -1,4 +1,4 @@
-export const dynamic = "force-static";
+ 
 import parentModel from "@/models/parent/Parent.model";
 import "@/models/student/Student.model";
 export async function GET(request, { params }) {

@@ -25,6 +25,7 @@ import {
   X
 } from "lucide-react";
 import useLogout from "@/utils/useLogout";
+import { AdminThemeToggle } from "@/components/theme-toggle";
 
 export default function AdminSidebar({ isOpen, setIsOpen }) {
   const pathname = usePathname();
@@ -59,14 +60,16 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
         { title: "Staff", href: "/admin/management/staff" }
       ]
     },
-
     {
       title: "Courses",
       icon: BookOpen,
       children: [
-        { title: "All Courses", href: "/admin/courses" },
-        { title: "Programs", href: "/admin/courses/programs" },
-        { title: "Curriculum", href: "/admin/courses/curriculum" }
+        { title: "Course Management", href: "/admin/courses" },
+        { title: "Primary Level", href: "/admin/courses/primary" },
+        { title: "Secondary Level", href: "/admin/courses/secondary" },
+        { title: "Bachelor Level", href: "/admin/courses/bachelor" },
+        { title: "Subject Management", href: "/admin/courses/subjects" },
+        { title: "Course Structure", href: "/admin/courses/structure" }
       ]
     },
     {
@@ -147,13 +150,17 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
                 <p className="text-xs text-muted-foreground">EduTech College</p>
               </div>
             </div>
-            {/* Mobile Close Button */}
-            <button
-              onClick={() => setIsOpen(false)}
-              className="lg:hidden p-2 rounded-lg hover:bg-muted/50 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Theme Toggle */}
+              <AdminThemeToggle />
+              {/* Mobile Close Button */}
+              <button
+                onClick={() => setIsOpen(false)}
+                className="lg:hidden p-2 rounded-lg hover:bg-muted/50 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
 
