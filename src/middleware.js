@@ -52,18 +52,18 @@ export async function middleware(request) {
     const { payload } = await jwtVerify(token, secret);
     console.log(payload);
     // Role-based protection
-    if (pathname.startsWith("/admin") && payload.role !== "admin") {
+    if (pathname.startsWith("/admin") || payload.role !== "admin") {
       return NextResponse.redirect(new URL("/unauthorized", request.url));
     }
 
-    if (pathname.startsWith("/student") && payload.role !== "student") {
+    if (pathname.startsWith("/student") || payload.role !== "student") {
       return NextResponse.redirect(new URL("/unauthorized", request.url));
     }
 
-    if (pathname.startsWith("/faculty") && payload.role !== "faculty") {
+    if (pathname.startsWith("/faculty") || payload.role !== "faculty") {
       return NextResponse.redirect(new URL("/unauthorized", request.url));
     }
-    if (pathname.startsWith("/profile") && payload.role !== "student") {
+    if (pathname.startsWith("/profile") || payload.role !== "student") {
       return NextResponse.redirect(new URL("/auth/login", request.url));
     }
 

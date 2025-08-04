@@ -16,7 +16,8 @@ import {
   Save,
   Users,
   Clock,
-  BookOpen
+  BookOpen,
+  Loader2
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -25,10 +26,11 @@ export default function AddPrimaryClass() {
   const [formData, setFormData] = useState({
     grade: "",
     nepaliName: "",
+    fullName: "",
+    ageGroup: "",
     students: "",
     sections: "1",
     weeklyHours: "30",
-    ageGroup: "",
     curriculum: "",
     description: "",
     subjects: []
@@ -36,6 +38,8 @@ export default function AddPrimaryClass() {
 
   const [selectedSubjects, setSelectedSubjects] = useState([]);
   const [customSubject, setCustomSubject] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const availableSubjects = [
     { name: "Nepali", code: "NEP", mandatory: true, hours: 6 },
@@ -56,6 +60,14 @@ export default function AddPrimaryClass() {
       ...prev,
       [name]: value
     }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ""
+      }));
+    }
   };
 
   const handleSubjectToggle = (subject) => {
@@ -86,27 +98,73 @@ export default function AddPrimaryClass() {
     setSelectedSubjects(prev => prev.filter(s => s.code !== subjectCode));
   };
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.grade.trim()) {
+      newErrors.grade = "Grade is required";
+    }
+    
+    if (!formData.nepaliName.trim()) {
+      newErrors.nepaliName = "Nepali name is required";
+    }
+    
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = "Full name is required";
+    }
+    
+    if (!formData.ageGroup.trim()) {
+      newErrors.ageGroup = "Age group is required";
+    }
+    
+    if (formData.students && (isNaN(formData.students) || parseInt(formData.students) < 1)) {
+      newErrors.students = "Please enter a valid number of students";
+    }
+    
+    if (formData.sections && (isNaN(formData.sections) || parseInt(formData.sections) < 1)) {
+      newErrors.sections = "Please enter a valid number of sections";
+    }
+    
+    if (selectedSubjects.length === 0) {
+      newErrors.subjects = "Please select at least one subject";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation
-    if (!formData.grade || !formData.nepaliName) {
-      toast.error("Please fill in all required fields");
+    if (!validateForm()) {
+      toast.error("Please fix the errors before submitting");
       return;
     }
 
-    const classData = {
-      ...formData,
-      subjects: selectedSubjects,
-      id: Date.now(),
-      createdAt: new Date().toISOString()
-    };
-
-    console.log("New Primary Class:", classData);
-    toast.success("Primary class added successfully!");
+    setIsSubmitting(true);
     
-    // In real app, this would redirect after API call
-    // router.push("/admin/courses/primary");
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const classData = {
+        ...formData,
+        subjects: selectedSubjects,
+        id: Date.now(),
+        createdAt: new Date().toISOString()
+      };
+
+      console.log("New Primary Class:", classData);
+      toast.success("Primary class added successfully!");
+      
+      // In real app, this would redirect after API call
+      // router.push("/admin/courses/primary");
+    } catch (error) {
+      toast.error("Failed to add class. Please try again.");
+      console.error("Submit error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const totalWeeklyHours = selectedSubjects.reduce((total, subject) => total + subject.hours, 0);
@@ -149,7 +207,11 @@ export default function AddPrimaryClass() {
                   value={formData.grade}
                   onChange={handleInputChange}
                   required
+                  className={errors.grade ? "border-red-500" : ""}
                 />
+                {errors.grade && (
+                  <p className="text-sm text-red-600 mt-1">{errors.grade}</p>
+                )}
               </div>
               <div>
                 <Label htmlFor="nepaliName">Nepali Name *</Label>
@@ -160,7 +222,43 @@ export default function AddPrimaryClass() {
                   value={formData.nepaliName}
                   onChange={handleInputChange}
                   required
+                  className={errors.nepaliName ? "border-red-500" : ""}
                 />
+                {errors.nepaliName && (
+                  <p className="text-sm text-red-600 mt-1">{errors.nepaliName}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="fullName">Full Name *</Label>
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  placeholder="e.g., Class One"
+                  value={formData.fullName}
+                  onChange={handleInputChange}
+                  required
+                  className={errors.fullName ? "border-red-500" : ""}
+                />
+                {errors.fullName && (
+                  <p className="text-sm text-red-600 mt-1">{errors.fullName}</p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="ageGroup">Age Group *</Label>
+                <Input
+                  id="ageGroup"
+                  name="ageGroup"
+                  placeholder="e.g., 5-6 years"
+                  value={formData.ageGroup}
+                  onChange={handleInputChange}
+                  className={errors.ageGroup ? "border-red-500" : ""}
+                />
+                {errors.ageGroup && (
+                  <p className="text-sm text-red-600 mt-1">{errors.ageGroup}</p>
+                )}
               </div>
             </div>
 
@@ -174,7 +272,11 @@ export default function AddPrimaryClass() {
                   placeholder="45"
                   value={formData.students}
                   onChange={handleInputChange}
+                  className={errors.students ? "border-red-500" : ""}
                 />
+                {errors.students && (
+                  <p className="text-sm text-red-600 mt-1">{errors.students}</p>
+                )}
               </div>
               <div>
                 <Label htmlFor="sections">Number of Sections</Label>
@@ -185,29 +287,23 @@ export default function AddPrimaryClass() {
                   placeholder="1"
                   value={formData.sections}
                   onChange={handleInputChange}
+                  className={errors.sections ? "border-red-500" : ""}
                 />
+                {errors.sections && (
+                  <p className="text-sm text-red-600 mt-1">{errors.sections}</p>
+                )}
               </div>
               <div>
-                <Label htmlFor="ageGroup">Age Group</Label>
+                <Label htmlFor="weeklyHours">Weekly Hours</Label>
                 <Input
-                  id="ageGroup"
-                  name="ageGroup"
-                  placeholder="e.g., 5-6 years"
-                  value={formData.ageGroup}
+                  id="weeklyHours"
+                  name="weeklyHours"
+                  type="number"
+                  placeholder="30"
+                  value={formData.weeklyHours}
                   onChange={handleInputChange}
                 />
               </div>
-            </div>
-
-            <div>
-              <Label htmlFor="curriculum">Curriculum Type</Label>
-              <Input
-                id="curriculum"
-                name="curriculum"
-                placeholder="e.g., Basic Foundation"
-                value={formData.curriculum}
-                onChange={handleInputChange}
-              />
             </div>
 
             <div>
@@ -231,6 +327,9 @@ export default function AddPrimaryClass() {
             <p className="text-sm text-muted-foreground">
               Select subjects for this class. Mandatory subjects are pre-selected.
             </p>
+            {errors.subjects && (
+              <p className="text-sm text-red-600">{errors.subjects}</p>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Available Subjects */}
@@ -344,11 +443,26 @@ export default function AddPrimaryClass() {
         {/* Actions */}
         <div className="flex justify-end gap-4">
           <Link href="/admin/courses/primary">
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline" disabled={isSubmitting}>
+              Cancel
+            </Button>
           </Link>
-          <Button type="submit" className="flex items-center gap-2">
-            <Save className="w-4 h-4" />
-            Save Class
+          <Button
+            type="submit"
+            className="flex items-center gap-2"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Creating Class...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Save Class
+              </>
+            )}
           </Button>
         </div>
       </form>
