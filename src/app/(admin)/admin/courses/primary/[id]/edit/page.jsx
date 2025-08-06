@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { 
+import {
   ArrowLeft,
   Plus,
   X,
@@ -18,7 +18,7 @@ import {
   Users,
   Clock,
   BookOpen,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -35,34 +35,11 @@ export default function EditPrimaryClass() {
     ageGroup: "",
     curriculum: "",
     description: "",
-    subjects: []
+    subjects: [],
   });
 
   const [selectedSubjects, setSelectedSubjects] = useState([]);
   const [customSubject, setCustomSubject] = useState("");
-
-  // Mock data - in real app this would come from API
-  const mockClassData = {
-    1: {
-      id: 1,
-      grade: "Grade 1",
-      nepaliName: "कक्षा १",
-      students: 45,
-      sections: 2,
-      weeklyHours: 30,
-      ageGroup: "5-6 years",
-      curriculum: "Basic Foundation",
-      description: "Foundation level education for young learners",
-      subjects: [
-        { name: "Nepali", code: "NEP", mandatory: true, hours: 6 },
-        { name: "English", code: "ENG", mandatory: true, hours: 5 },
-        { name: "Mathematics", code: "MATH", mandatory: true, hours: 6 },
-        { name: "Science", code: "SCI", mandatory: true, hours: 4 },
-        { name: "Social Studies", code: "SS", mandatory: true, hours: 4 },
-        { name: "Health & Physical Education", code: "HPE", mandatory: true, hours: 3 }
-      ]
-    }
-  };
 
   const availableSubjects = [
     { name: "Nepali", code: "NEP", mandatory: true, hours: 6 },
@@ -70,47 +47,53 @@ export default function EditPrimaryClass() {
     { name: "Mathematics", code: "MATH", mandatory: true, hours: 6 },
     { name: "Science", code: "SCI", mandatory: true, hours: 4 },
     { name: "Social Studies", code: "SS", mandatory: true, hours: 4 },
-    { name: "Health & Physical Education", code: "HPE", mandatory: true, hours: 3 },
+    {
+      name: "Health & Physical Education",
+      code: "HPE",
+      mandatory: true,
+      hours: 3,
+    },
     { name: "Computer", code: "COMP", mandatory: false, hours: 2 },
     { name: "Moral Education", code: "ME", mandatory: false, hours: 2 },
     { name: "Art & Craft", code: "ART", mandatory: false, hours: 2 },
-    { name: "Music", code: "MUS", mandatory: false, hours: 1 }
+    { name: "Music", code: "MUS", mandatory: false, hours: 1 },
   ];
 
   useEffect(() => {
     // Simulate API call
-    setTimeout(() => {
-      const classData = mockClassData[params.id];
-      if (classData) {
-        setFormData({
-          grade: classData.grade,
-          nepaliName: classData.nepaliName,
-          students: classData.students.toString(),
-          sections: classData.sections.toString(),
-          weeklyHours: classData.weeklyHours.toString(),
-          ageGroup: classData.ageGroup,
-          curriculum: classData.curriculum,
-          description: classData.description
-        });
-        setSelectedSubjects(classData.subjects);
-      }
-      setLoading(false);
-    }, 1000);
+    fetechClassData();
   }, [params.id]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
-
+  const fetechClassData = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/classes/${params.id}`
+      );
+      const data = await res.json();
+      setFormData(data.data);
+      setSelectedSubjects(data.data.subjects);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching class data:", error);
+      toast.error("Failed to fetch class data", {
+        description: "Please try again later",
+        duration: 3000,
+      });
+    }
+  };
+  const router = useRouter()
   const handleSubjectToggle = (subject) => {
-    setSelectedSubjects(prev => {
-      const exists = prev.find(s => s.code === subject.code);
+    setSelectedSubjects((prev) => {
+      const exists = prev.find((s) => s.code === subject.code);
       if (exists) {
-        return prev.filter(s => s.code !== subject.code);
+        return prev.filter((s) => s.code !== subject.code);
       } else {
         return [...prev, subject];
       }
@@ -121,39 +104,52 @@ export default function EditPrimaryClass() {
     if (customSubject.trim()) {
       const newSubject = {
         name: customSubject,
-        code: customSubject.toUpperCase().replace(/\s+/g, ''),
+        code: customSubject.toUpperCase().replace(/\s+/g, ""),
         mandatory: false,
-        hours: 2
+        hours: 2,
       };
-      setSelectedSubjects(prev => [...prev, newSubject]);
+      setSelectedSubjects((prev) => [...prev, newSubject]);
       setCustomSubject("");
     }
   };
 
   const removeSubject = (subjectCode) => {
-    setSelectedSubjects(prev => prev.filter(s => s.code !== subjectCode));
+    setSelectedSubjects((prev) => prev.filter((s) => s.code !== subjectCode));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.grade || !formData.nepaliName) {
+    if (!formData.grade) {
       toast.error("Please fill in all required fields");
       return;
     }
-
-    const updatedClassData = {
-      ...formData,
-      subjects: selectedSubjects,
-      id: params.id,
-      updatedAt: new Date().toISOString()
-    };
-
-    console.log("Updated Primary Class:", updatedClassData);
-    toast.success("Primary class updated successfully!");
+    try {
+      formData.subjects = null
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/classes/${params.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ...formData,   }),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Primary class updated successfully");
+        router.push("/admin/courses/primary");
+      }
+    } catch (error) {
+      toast.error("Failed to update class. Please try again.");
+      console.error("Submit error:", error);
+    }
   };
 
-  const totalWeeklyHours = selectedSubjects.reduce((total, subject) => total + subject.hours, 0);
+  const totalWeeklyHours = selectedSubjects?.reduce(
+    (total, subject) => total + subject.hours,
+    0
+  );
 
   if (loading) {
     return (
@@ -284,18 +280,26 @@ export default function EditPrimaryClass() {
           <CardHeader>
             <CardTitle>Subject Management</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Update subjects for this class. Mandatory subjects cannot be removed.
+              Update subjects for this class. Mandatory subjects cannot be
+              removed.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Available Subjects */}
             <div>
-              <Label className="text-base font-medium">Available Subjects</Label>
+              <Label className="text-base font-medium">
+                Available Subjects
+              </Label>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
-                {availableSubjects.map((subject) => {
-                  const isSelected = selectedSubjects.find(s => s.code === subject.code);
+                {availableSubjects?.map((subject) => {
+                  const isSelected = selectedSubjects?.find(
+                    (s) => s.code === subject.code
+                  );
                   return (
-                    <div key={subject.code} className="flex items-center space-x-2 p-3 border rounded-lg">
+                    <div
+                      key={subject.code}
+                      className="flex items-center space-x-2 p-3 border rounded-lg"
+                    >
                       <Checkbox
                         id={subject.code}
                         checked={isSelected}
@@ -307,7 +311,12 @@ export default function EditPrimaryClass() {
                           {subject.name}
                         </Label>
                         <div className="flex items-center gap-2 mt-1">
-                          <Badge variant={subject.mandatory ? "default" : "secondary"} className="text-xs">
+                          <Badge
+                            variant={
+                              subject.mandatory ? "default" : "secondary"
+                            }
+                            className="text-xs"
+                          >
                             {subject.mandatory ? "Required" : "Optional"}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
@@ -323,7 +332,9 @@ export default function EditPrimaryClass() {
 
             {/* Add Custom Subject */}
             <div>
-              <Label className="text-base font-medium">Add Custom Subject</Label>
+              <Label className="text-base font-medium">
+                Add Custom Subject
+              </Label>
               <div className="flex gap-2 mt-2">
                 <Input
                   placeholder="Enter subject name"
@@ -337,12 +348,18 @@ export default function EditPrimaryClass() {
             </div>
 
             {/* Selected Subjects */}
-            {selectedSubjects.length > 0 && (
+            {selectedSubjects?.length > 0 && (
               <div>
-                <Label className="text-base font-medium">Current Subjects ({selectedSubjects.length})</Label>
+                <Label className="text-base font-medium">
+                  Current Subjects ({selectedSubjects.length})
+                </Label>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {selectedSubjects.map((subject) => (
-                    <Badge key={subject.code} variant="outline" className="flex items-center gap-1">
+                    <Badge
+                      key={subject.code}
+                      variant="outline"
+                      className="flex items-center gap-1"
+                    >
                       {subject.name}
                       <span className="text-xs">({subject.hours}h)</span>
                       {!subject.mandatory && (
@@ -384,7 +401,7 @@ export default function EditPrimaryClass() {
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <BookOpen className="w-6 h-6 mx-auto mb-2 text-purple-600" />
-                <p className="text-2xl font-bold">{selectedSubjects.length}</p>
+                <p className="text-2xl font-bold">{selectedSubjects?.length}</p>
                 <p className="text-sm text-muted-foreground">Subjects</p>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
