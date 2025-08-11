@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,140 +19,50 @@ import {
   Car,
   BookOpen,
   Coffee,
-  Zap
+  Zap,
+  Loader2
 } from "lucide-react";
-
-// Mock data for campus facilities (Nepali college system)
-const mockFacilities = [
-  {
-    id: 1,
-    name: "Main Academic Building",
-    type: "Academic",
-    location: "Central Campus",
-    capacity: 500,
-    totalRooms: 25,
-    availableRooms: 20,
-    facilities: ["WiFi", "Projector", "Air Conditioning", "Whiteboard"],
-    description: "Primary academic building housing classrooms, faculty offices, and administrative departments.",
-    status: "Active",
-    maintenanceDate: "2024-01-15",
-    image: "https://images.unsplash.com/photo-1562774053-701939374585?w=400&h=300&fit=crop",
-    manager: "Ram Bahadur Shrestha",
-    contact: "9841234567",
-    operatingHours: "6:00 AM - 10:00 PM",
-    yearBuilt: "2015"
-  },
-  {
-    id: 2,
-    name: "Science Laboratory Complex",
-    type: "Laboratory",
-    location: "Science Block",
-    capacity: 120,
-    totalRooms: 8,
-    availableRooms: 6,
-    facilities: ["Laboratory Equipment", "Safety Systems", "Ventilation", "Emergency Exits"],
-    description: "Modern laboratory complex with physics, chemistry, and biology labs equipped with latest instruments.",
-    status: "Active",
-    maintenanceDate: "2024-02-01",
-    image: "https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=400&h=300&fit=crop",
-    manager: "Dr. Sunita Rai",
-    contact: "9841234568",
-    operatingHours: "8:00 AM - 6:00 PM",
-    yearBuilt: "2018"
-  },
-  {
-    id: 3,
-    name: "Central Library",
-    type: "Library",
-    location: "Library Building",
-    capacity: 200,
-    totalRooms: 5,
-    availableRooms: 5,
-    facilities: ["Digital Catalog", "Reading Rooms", "Computer Lab", "WiFi", "Study Halls"],
-    description: "Comprehensive library with over 50,000 books, digital resources, and quiet study spaces.",
-    status: "Active",
-    maintenanceDate: "2024-01-20",
-    image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop",
-    manager: "Sunita Lama",
-    contact: "9841234569",
-    operatingHours: "7:00 AM - 9:00 PM",
-    yearBuilt: "2016"
-  },
-  {
-    id: 4,
-    name: "Student Cafeteria",
-    type: "Dining",
-    location: "Student Center",
-    capacity: 300,
-    totalRooms: 3,
-    availableRooms: 3,
-    facilities: ["Kitchen", "Dining Hall", "Outdoor Seating", "Vending Machines"],
-    description: "Modern cafeteria serving healthy and affordable meals to students and staff.",
-    status: "Active",
-    maintenanceDate: "2024-01-10",
-    image: "https://images.unsplash.com/photo-1567521464027-f127ff144326?w=400&h=300&fit=crop",
-    manager: "Maya Tamang",
-    contact: "9841234570",
-    operatingHours: "6:00 AM - 8:00 PM",
-    yearBuilt: "2017"
-  },
-  {
-    id: 5,
-    name: "Sports Complex",
-    type: "Recreation",
-    location: "Sports Ground",
-    capacity: 1000,
-    totalRooms: 10,
-    availableRooms: 8,
-    facilities: ["Basketball Court", "Volleyball Court", "Gym", "Changing Rooms", "Equipment Storage"],
-    description: "Multi-purpose sports complex with indoor and outdoor facilities for various sports activities.",
-    status: "Active",
-    maintenanceDate: "2024-02-05",
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop",
-    manager: "Dipak Gurung",
-    contact: "9841234571",
-    operatingHours: "5:00 AM - 10:00 PM",
-    yearBuilt: "2019"
-  },
-  {
-    id: 6,
-    name: "Computer Lab",
-    type: "Technology",
-    location: "IT Building",
-    capacity: 80,
-    totalRooms: 4,
-    availableRooms: 3,
-    facilities: ["High-Speed Internet", "Latest Computers", "Software Licenses", "Printing Facility"],
-    description: "State-of-the-art computer laboratory with modern hardware and software for IT education.",
-    status: "Under Maintenance",
-    maintenanceDate: "2024-02-10",
-    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=300&fit=crop",
-    manager: "Rajesh Shrestha",
-    contact: "9841234572",
-    operatingHours: "8:00 AM - 8:00 PM",
-    yearBuilt: "2020"
-  }
-];
+import { useRouter } from "next/navigation";
+ 
 
 export default function CampusManagement() {
-  const [facilities, setFacilities] = useState(mockFacilities);
+  const [facilities, setFacilities] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFacility, setSelectedFacility] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-  const filteredFacilities = facilities.filter(facility =>
-    facility.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    facility.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    facility.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    facility.manager.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+
+  const getFacilities = async () => {
+    try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus`);
+      const data = await res.json();
+      setFacilities(data.data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching facilities:', error);
+    }
+  };
+
+  useEffect(() => {
+    getFacilities();
+
+  }, []);
 
   const handleView = (facility) => {
     setSelectedFacility(facility);
   };
 
   const handleEdit = (facilityId) => {
-    window.location.href = `/admin/campus/${facilityId}/edit`;
+    router.push(`/admin/campus/${facilityId}/edit`);
   };
+
+  const filteredFacilities = facilities?.filter(facility =>
+    facility.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    facility.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    facility.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    facility.manager.toLowerCase().includes(searchTerm.toLowerCase())
+  ); 
 
   const handleDelete = (facilityId) => {
     if (confirm("Are you sure you want to delete this facility?")) {
@@ -180,13 +90,20 @@ export default function CampusManagement() {
       default: return <Building className="w-5 h-5" />;
     }
   };
-
-  const totalCapacity = facilities.reduce((sum, f) => sum + f.capacity, 0);
-  const totalRooms = facilities.reduce((sum, f) => sum + f.totalRooms, 0);
-  const availableRooms = facilities.reduce((sum, f) => sum + f.availableRooms, 0);
+  // Calculate stats dynamically
+  const totalCapacity = facilities.reduce((sum, f) => sum + (f.capacity || 0), 0);
+  const totalRooms = facilities.reduce((sum, f) => sum + (f.totalRooms || 0), 0);
+  const availableRooms = facilities.reduce((sum, f) => sum + (f.availableRooms || 0), 0);
   const activeFacilities = facilities.filter(f => f.status === "Active").length;
 
+
   return (
+    <> 
+    {loading ? (
+        <div className="flex items-center justify-center h-screen">
+            <Loader2 className="w-10 h-10 animate-spin" />
+        </div>
+    ) : (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -195,7 +112,7 @@ export default function CampusManagement() {
           <p className="text-muted-foreground">Manage campus buildings and facilities</p>
         </div>
         <div className="flex gap-2"> 
-          <Button onClick={() => window.location.href = '/admin/campus/add'} className="flex items-center gap-2">
+          <Button onClick={() => router.push('/admin/campus/add')} className="flex items-center gap-2">
             <Plus className="w-4 h-4" />
             Add Facility
           </Button>
@@ -209,7 +126,7 @@ export default function CampusManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Facilities</p>
-                <p className="text-2xl font-bold text-primary">{facilities.length}</p>
+                <p className="text-2xl font-bold text-primary">{ facilities?.length}</p>
               </div>
               <Building className="w-8 h-8 text-primary" />
             </div>
@@ -266,7 +183,7 @@ export default function CampusManagement() {
       {/* Facilities Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredFacilities.map((facility) => (
-          <Card key={facility.id} className="hover:shadow-lg transition-shadow">
+          <Card key={facility._id} className="hover:shadow-lg transition-shadow">
             <div className="aspect-video relative overflow-hidden rounded-t-lg">
               <img 
                 src={facility.image} 
@@ -465,6 +382,6 @@ export default function CampusManagement() {
           </Card>
         </div>
       )}
-    </div>
+    </div>)} </>
   );
 }

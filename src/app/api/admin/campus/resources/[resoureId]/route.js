@@ -42,6 +42,13 @@ export async function DELETE(request, { params }) {
     try {
         const resourceId = await params.resourceId;
         const resource = await ResourceModel.findOneAndDelete({ _id: resourceId }).lean();
+        if (!resource) {
+            return Response.json({
+                message: "Resource not found",
+                success: false,
+                error: "Resource not found",
+            });
+        }
         return Response.json({
             message: "Resource data deleted successfully",
             success: true,

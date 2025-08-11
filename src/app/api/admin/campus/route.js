@@ -2,15 +2,15 @@ import facilitiesModel from "@/models/admin/campus/facilities.model";
 
 export async function GET (){
     try {
-        const campuses = await facilitiesModel.find({}).lean();
+        const facilities = await facilitiesModel.find({}).lean();
         return Response.json({
-            message: "Campuses data retrieved successfully",
+            message: "Facility data retrieved successfully",
             success: true,
-            data: campuses,
+            data: facilities,
         });
     } catch (error) {
         return Response.json({
-            message: "Failed to retrieve campuses data",
+            message: "Failed to retrieve facility data",
             success: false,
             error: error.message,
         });
