@@ -39,6 +39,7 @@ import {
 import Link from "next/link";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
+import da from "zod/v4/locales/da.cjs";
 
 export default function PrimaryClassDetails() {
   const params = useParams();
@@ -225,16 +226,160 @@ export default function PrimaryClassDetails() {
     },
   };
 
+
+
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const data = mockClassData[params.id];
-      if (data) {
-        setClassData(data);
-      }
-      setLoading(false);
-    }, 1000);
+    getClassData()
   }, [params.id]);
+
+  const getClassData = async () => {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/classes/${params.id}`)
+    const data = await res.json()
+    data.data.subjects = [
+      {
+        name: "Nepali",
+        code: "NEP",
+        mandatory: true,
+        hours: 6,
+        teacher: "Mrs. Sita Sharma",
+      },
+      {
+        name: "English",
+        code: "ENG",
+        mandatory: true,
+        hours: 5,
+        teacher: "Mr. John Smith",
+      },
+      {
+        name: "Mathematics",
+        code: "MATH",
+        mandatory: true,
+        hours: 6,
+        teacher: "Mrs. Kamala Devi",
+      },
+      {
+        name: "Science",
+        code: "SCI",
+        mandatory: true,
+        hours: 4,
+        teacher: "Mr. Ram Prasad",
+      },
+      {
+        name: "Social Studies",
+        code: "SS",
+        mandatory: true,
+        hours: 4,
+        teacher: "Mrs. Gita Poudel",
+      },
+      {
+        name: "Health & Physical Education",
+        code: "HPE",
+        mandatory: true,
+        hours: 3,
+        teacher: "Mr. Bikash Thapa",
+      },
+    ],
+    data.data.statistics = {
+      totalStudents: 45,
+      maleStudents: 23,
+      femaleStudents: 22,
+      averageAge: 5.5,
+      attendanceRate: 94.5,
+      passRate: 98.2,
+    }
+    data.data.teachers = [
+      {
+        name: "Mrs. Sita Sharma",
+        subject: "Nepali",
+        experience: "8 years",
+        qualification: "M.A. Nepali",
+      },
+      {
+        name: "Mr. John Smith",
+        subject: "English",
+        experience: "5 years",
+        qualification: "B.Ed. English",
+      },
+    ],
+      data.data.schedule = [
+        {
+          day: "Sunday",
+          periods: [
+            "Nepali",
+            "English",
+            "Math",
+            "Science",
+            "Break",
+            "Social Studies",
+            "HPE",
+          ],
+        },
+        {
+          day: "Monday",
+          periods: [
+            "Math",
+            "Nepali",
+            "English",
+            "Science",
+            "Break",
+            "Social Studies",
+            "HPE",
+          ],
+        },
+        {
+          day: "Tuesday",
+          periods: [
+            "English",
+            "Math",
+            "Nepali",
+            "Science",
+            "Break",
+            "Social Studies",
+            "Art",
+          ],
+        },
+        {
+          day: "Wednesday",
+          periods: [
+            "Science",
+            "Math",
+            "English",
+            "Nepali",
+            "Break",
+            "Social Studies",
+            "HPE",
+          ],
+        },
+        {
+          day: "Thursday",
+          periods: [
+            "Nepali",
+            "English",
+            "Math",
+            "Science",
+            "Break",
+            "Social Studies",
+            "Music",
+          ],
+        },
+        {
+          day: "Friday",
+          periods: [
+            "Math",
+            "Nepali",
+            "English",
+            "Science",
+            "Break",
+            "Social Studies",
+            "HPE",
+          ],
+        },
+      ]
+
+
+    setClassData(data.data)
+    setLoading(false)
+  }
 
   const handleDelete = () => {
     if (
@@ -404,7 +549,7 @@ export default function PrimaryClassDetails() {
                 <p className="text-sm text-muted-foreground">Hours/Week</p>
                 <div className="flex items-center gap-1 mt-1">
                   <Clock className="w-3 h-3 text-orange-600" />
-                  <span className="text-xs text-orange-600">{Math.round(classData.weeklyHours/5)} hrs/day avg</span>
+                  <span className="text-xs text-orange-600">{Math.round(classData.weeklyHours / 5)} hrs/day avg</span>
                 </div>
               </div>
               <div className="p-3 bg-orange-100 rounded-lg">
@@ -582,7 +727,7 @@ export default function PrimaryClassDetails() {
                       <Badge variant="default" className="bg-purple-600">Excellent</Badge>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-purple-600 h-2 rounded-full" style={{width: '92%'}}></div>
+                      <div className="bg-purple-600 h-2 rounded-full" style={{ width: '92%' }}></div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">92% class average</p>
                   </div>
@@ -764,7 +909,7 @@ export default function PrimaryClassDetails() {
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className="bg-green-600 h-2 rounded-full"
-                      style={{width: `${classData.statistics.attendanceRate}%`}}
+                      style={{ width: `${classData.statistics.attendanceRate}%` }}
                     ></div>
                   </div>
                 </div>
@@ -786,7 +931,7 @@ export default function PrimaryClassDetails() {
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className="bg-blue-600 h-2 rounded-full"
-                      style={{width: `${classData.statistics.passRate}%`}}
+                      style={{ width: `${classData.statistics.passRate}%` }}
                     ></div>
                   </div>
                 </div>
@@ -806,7 +951,7 @@ export default function PrimaryClassDetails() {
                 </div>
                 <div className="mt-2">
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-purple-600 h-2 rounded-full" style={{width: '87%'}}></div>
+                    <div className="bg-purple-600 h-2 rounded-full" style={{ width: '87%' }}></div>
                   </div>
                 </div>
               </CardContent>
@@ -825,7 +970,7 @@ export default function PrimaryClassDetails() {
                 </div>
                 <div className="mt-2">
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-orange-600 h-2 rounded-full" style={{width: '91%'}}></div>
+                    <div className="bg-orange-600 h-2 rounded-full" style={{ width: '91%' }}></div>
                   </div>
                 </div>
               </CardContent>

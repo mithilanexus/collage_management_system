@@ -328,8 +328,8 @@ export default function PrimaryLevel() {
                     <div className="flex items-center gap-3">
                       <div className={`p-2 ${cls.color} rounded-lg`}>
                         {cls.grade.startsWith("PG") ||
-                        cls.grade.includes("Nursery") ||
-                        cls.grade.includes("KG") ? (
+                          cls.grade.includes("Nursery") ||
+                          cls.grade.includes("KG") ? (
                           <Baby className="w-6 h-6 text-black" />
                         ) : (
                           <GraduationCap className="w-6 h-6 text-black" />
@@ -410,7 +410,7 @@ export default function PrimaryLevel() {
 
                   <div className="flex gap-2">
                     <Link
-                      href={`/admin/courses/primary/${cls.id}`}
+                      href={`/admin/courses/primary/${cls._id}`}
                       className="flex-1"
                     >
                       <Button className="w-full">
@@ -418,7 +418,7 @@ export default function PrimaryLevel() {
                         Manage Class
                       </Button>
                     </Link>
-                    <Link href={`/admin/courses/primary/${cls.id}/routine`}>
+                    <Link href={`/admin/courses/primary/${cls._id}/routine`}>
                       <Button variant="outline" size="sm">
                         <Calendar className="w-4 h-4" />
                       </Button>
@@ -480,13 +480,13 @@ export default function PrimaryLevel() {
                       </div>
 
                       <div className="flex gap-2">
-                        <Link href={`/admin/courses/primary/${cls.id}`}>
+                        <Link href={`/admin/courses/primary/${cls._id}`}>
                           <Button size="sm">
                             <Eye className="w-4 h-4 mr-2" />
                             Manage
                           </Button>
                         </Link>
-                        <Link href={`/admin/courses/primary/${cls.id}/routine`}>
+                        <Link href={`/admin/courses/primary/${cls._id}/routine`}>
                           <Button variant="outline" size="sm">
                             <Calendar className="w-4 h-4" />
                           </Button>
