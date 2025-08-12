@@ -54,16 +54,32 @@ export default function AddFacilityPage() {
     },
   });
 
-  const onSubmit = (values) => {
+  const onSubmit = async (values) => {
     const payload = {
       ...values,
       facilities: values.facilities
         ? values.facilities.split(",").map((s) => s.trim()).filter(Boolean)
         : [],
     };
-    console.log("Create Facility payload", payload);
-    toast.success("Facility created (frontend only)");
-    router.push("/admin/campus");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Facility created");
+        router.push("/admin/campus");
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error("Error creating facility:", error);
+      toast.error(error.message);
+    }
   };
 
   return (

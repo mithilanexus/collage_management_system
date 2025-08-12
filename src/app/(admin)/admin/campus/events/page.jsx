@@ -19,6 +19,7 @@ import {
   AlertCircle,
   Loader2
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 // Mock data for cam 
 export default function EventsManagement() {
@@ -33,6 +34,7 @@ export default function EventsManagement() {
     event.organizer.toLowerCase().includes(searchTerm.toLowerCase()) ||
     event.venue.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const router = useRouter();
   useEffect(() => {
     getEvents();
   }, []);
@@ -52,12 +54,28 @@ export default function EventsManagement() {
   };
 
   const handleEdit = (eventId) => {
-    window.location.href = `/admin/campus/events/${eventId}/edit`;
+    router.push(`/admin/campus/events/${eventId}/edit`);
   };
 
-  const handleDelete = (eventId) => {
-    if (confirm("Are you sure you want to delete this event?")) {
-      setEvents(events.filter(e => e.id !== eventId));
+  const handleDelete = async (eventId) => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/events/${eventId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      console.log("Delete Event payload", data);
+      if (data.success) {
+        toast.success("Event deleted");
+        const updatedEvents = events.filter(event => event._id !== eventId);
+        setEvents(updatedEvents);
+
+        router.push("/admin/campus/events");
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) { 
+      console.error("Error deleting event:", error);
+      toast.error(error.message);
     }
   };
 
@@ -247,14 +265,14 @@ export default function EventsManagement() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleEdit(event.id)}
+                      onClick={() => handleEdit(event._id)}
                     >
                       <Edit className="w-3 h-3" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDelete(event.id)}
+                      onClick={() => handleDelete(event._id)}
                       className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="w-3 h-3" />
@@ -387,7 +405,7 @@ export default function EventsManagement() {
                     <Button variant="outline" onClick={() => setSelectedEvent(null)}>
                       Close
                     </Button>
-                    <Button onClick={() => handleEdit(selectedEvent.id)}>
+                    <Button onClick={() => handleEdit(selectedEvent._id)}>
                       Edit Event
                     </Button>
                   </div>

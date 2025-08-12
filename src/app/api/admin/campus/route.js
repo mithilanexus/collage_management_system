@@ -1,6 +1,6 @@
 import facilitiesModel from "@/models/admin/campus/facilities.model";
 
-export async function GET (){
+export async function GET() {
     try {
         const facilities = await facilitiesModel.find({}).lean();
         return Response.json({
@@ -18,7 +18,7 @@ export async function GET (){
 
 }
 
-export async function POST(){
+export async function POST(request) {
     try {
         const req = await request.json();
         const newFacility = await facilitiesModel.create(req);

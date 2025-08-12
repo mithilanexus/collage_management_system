@@ -67,16 +67,33 @@ export default function AddEventPage() {
     },
   });
 
-  const onSubmit = (values) => {
+  const onSubmit = async(values) => {
     const payload = {
       ...values,
       sponsors: values.sponsors
         ? values.sponsors.split(",").map((s) => s.trim()).filter(Boolean)
         : [],
     };
-    console.log("Create Event payload", payload);
-    toast.success("Event created (frontend only)");
-    router.push("/admin/campus/events");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/events`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      console.log("Create Event payload", payload);
+      if (data.success) {
+        toast.success("Event created");
+        router.push("/admin/campus/events");
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error("Error creating event:", error);
+      toast.error(error.message);
+    }
   };
 
   return (

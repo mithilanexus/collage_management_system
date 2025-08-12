@@ -59,31 +59,25 @@ export default function EditResourcePage() {
       features: "",
     },
   });
+ 
+
+  const getResource = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/resources/${id}`);
+      const data = await res.json();
+      form.reset(data.data);
+    } catch (error) {
+      console.error("Error fetching resource:", error);
+      toast.error("Failed to fetch resource");
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
-    const mock = {
-      resourceName: "Campus WiFi Network",
-      category: "Technology",
-      type: "Infrastructure",
-      description: "High-speed wireless internet across campus.",
-      availability: "24/7",
-      location: "Campus-wide",
-      capacity: "2000 concurrent users",
-      currentUsage: 1250,
-      cost: "Rs. 150,000/year",
-      provider: "Nepal Telecom",
-      status: "Active",
-      accessMethod: "Student/Staff Credentials",
-      supportContact: "it@college.edu.np",
-      lastUpdated: "2024-01-10",
-      image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64",
-      features: "High-Speed Internet, Campus-wide Coverage, Secure Access",
-    };
-    form.reset(mock);
+    getResource();
   }, [id]);
 
-  const onSubmit = (values) => {
+  const onSubmit =async (values) => {
     const payload = {
       ...values,
       features: values.features
@@ -91,9 +85,27 @@ export default function EditResourcePage() {
         : [],
       _id: id,
     };
-    console.log("Update Resource payload", payload);
-    toast.success("Resource updated (frontend only)");
-    router.push("/admin/campus/resources");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/resources/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      console.log("Update Resource payload", payload);
+      if (data.success) {
+        toast.success("Resource updated");
+        router.push("/admin/campus/resources");
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error("Error updating resource:", error);
+      toast.error(error.message);
+    }
+    
   };
 
   return (

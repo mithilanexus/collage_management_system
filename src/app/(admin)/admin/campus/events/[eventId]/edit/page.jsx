@@ -71,35 +71,22 @@ export default function EditEventPage() {
     },
   });
 
+  const getEvent = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/events/${id}`);
+      const data = await res.json();
+      form.reset(data.data);
+    } catch (error) {
+      console.error('Error fetching event:', error);
+    }
+  };
+
   useEffect(() => {
     if (!id) return;
-    const mock = {
-      eventName: "Science Exhibition 2024",
-      eventType: "Academic",
-      description: "Student science projects exhibition.",
-      startDate: "2024-02-20",
-      endDate: "2024-02-22",
-      startTime: "10:00",
-      endTime: "16:00",
-      venue: "Science Building",
-      organizer: "Science Department",
-      expectedAttendees: 800,
-      registeredAttendees: 650,
-      registrationRequired: false,
-      registrationDeadline: "",
-      entryFee: 50,
-      status: "Ongoing",
-      priority: "Medium",
-      image: "https://images.unsplash.com/photo-1532094349884-543bc11b234d",
-      contact: "9841234568",
-      email: "science@college.edu.np",
-      budget: 75000,
-      sponsors: "Science Foundation Nepal",
-    };
-    form.reset(mock);
+    getEvent();
   }, [id]);
 
-  const onSubmit = (values) => {
+  const onSubmit = async (values) => {
     const payload = {
       ...values,
       sponsors: values.sponsors
@@ -107,9 +94,26 @@ export default function EditEventPage() {
         : [],
       _id: id,
     };
-    console.log("Update Event payload", payload);
-    toast.success("Event updated (frontend only)");
-    router.push("/admin/campus/events");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/events/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      console.log("Update Event payload", payload);
+      if (data.success) {
+        toast.success("Event updated");
+        router.push("/admin/campus/events");
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error("Error updating event:", error);
+      toast.error(error.message);
+    }
   };
 
   return (

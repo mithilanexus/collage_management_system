@@ -57,31 +57,24 @@ export default function EditFacilityPage() {
       yearBuilt: new Date().getFullYear(),
     },
   });
+ 
+  const getFacility = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/${id}`);
+      const data = await res.json();
+      form.reset(data.data);
+    } catch (error) {
+      console.error('Error fetching facility:', error);
+    }
+  };
 
   useEffect(() => {
-    // Frontend-only mock prefill based on id
-    if (!id) return;
-    const mock = {
-      name: "Central Library",
-      type: "Library",
-      location: "Library Building",
-      capacity: 200,
-      totalRooms: 5,
-      availableRooms: 5,
-      facilities: "Digital Catalog, Reading Rooms, Computer Lab",
-      description: "Comprehensive library with books and digital resources.",
-      status: "Active",
-      maintenanceDate: "2024-01-20",
-      image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570",
-      manager: "Sunita Lama",
-      contact: "9841234569",
-      operatingHours: "7:00 AM - 9:00 PM",
-      yearBuilt: 2016,
-    };
-    form.reset(mock);
+    if (id) {
+      getFacility();
+    }
   }, [id]);
 
-  const onSubmit = (values) => {
+  const onSubmit = async (values) => {
     const payload = {
       ...values,
       facilities: values.facilities
@@ -89,9 +82,26 @@ export default function EditFacilityPage() {
         : [],
       _id: id,
     };
-    console.log("Update Facility payload", payload);
-    toast.success("Facility updated (frontend only)");
-    router.push("/admin/campus");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      console.log("Update Facility payload", payload);
+      if (data.success) {
+        toast.success("Facility updated");
+        router.push("/admin/campus");
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error("Error updating facility:", error);
+      toast.error(error.message);
+    }
   };
 
   return (

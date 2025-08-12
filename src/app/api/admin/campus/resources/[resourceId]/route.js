@@ -1,9 +1,9 @@
 import ResourceModel from "@/models/admin/campus/resources.model";
-export async function GET(request, { params }) {
+export async function GET(request, context) {
     
     try {
-        
-        const resourceId = await params.resourceId;
+        const params = await context.params;
+        const resourceId = params.resourceId;
         const resource = await ResourceModel.findOne({ _id: resourceId }).lean();
         return Response.json({
             message: "Resource data retrieved successfully",
@@ -18,11 +18,13 @@ export async function GET(request, { params }) {
         });
     }
 }
-export async function PUT(request, { params }) {
+export async function PUT(request, context) {
     
     try {
-        const resourceId = await params.resourceId;
-        const resource = await ResourceModel.findOneAndUpdate({ _id: resourceId }).lean();
+        const params = await context.params;
+        const resourceId = params.resourceId;
+        const body = await request.json(); // ✅ parse the body
+        const resource = await ResourceModel.findOneAndUpdate({ _id: resourceId }, { $set: { ...body } }, { new: true }).lean();
         return Response.json({
             message: "Resource data updated successfully",
             success: true,
@@ -37,10 +39,11 @@ export async function PUT(request, { params }) {
     }
 
 }
-export async function DELETE(request, { params }) {
+export async function DELETE(request, context) {
     
     try {
-        const resourceId = await params.resourceId;
+        const params = await context.params;
+        const resourceId = params.resourceId;
         const resource = await ResourceModel.findOneAndDelete({ _id: resourceId }).lean();
         if (!resource) {
             return Response.json({

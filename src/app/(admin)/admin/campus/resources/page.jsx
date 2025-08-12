@@ -22,22 +22,24 @@ import {
   Loader2
 } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 export default function ResourcesManagement() {
   const [resources, setResources] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedResource, setSelectedResource] = useState(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
   useEffect(() => {
-    getEvents();
+    getResources();
   }, []);
-  const getEvents = async () => {
+  const getResources = async () => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/resources`);
       const data = await res.json();
       setResources(data.data);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching events:', error);
+      console.error('Error fetching resources:', error);
     }
   };
   const filteredResources = resources.filter(resource =>
@@ -52,7 +54,7 @@ export default function ResourcesManagement() {
   };
 
   const handleEdit = (resourceId) => {
-    window.location.href = `/admin/campus/resources/${resourceId}/edit`;
+    router.push(`/admin/campus/resources/${resourceId}/edit`);
   };
 
   const handleDelete = async (resourceId) => {
@@ -63,11 +65,16 @@ export default function ResourcesManagement() {
       const data = await res.json();
       if (data.success) {
         toast.success("Resource deleted");
-        filteredResources.filter((resource) => resource._id !== resourceId);
+        const updatedResources = resources.filter(resource => resource._id !== resourceId);
+        setResources(updatedResources);
+
+        router.push("/admin/campus/resources");
+      } else {
+        throw new Error(data.message);
       }
     } catch (error) {
-      console.error('Error deleting event:', error);
-      toast.error("Error deleting resource");
+      console.error("Error deleting resource:", error);
+      toast.error(error.message);
     }
   };
 
@@ -262,7 +269,7 @@ export default function ResourcesManagement() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleEdit(resource.id)}
+                      onClick={() => handleEdit(resource._id)}
                     >
                       <Edit className="w-3 h-3" />
                     </Button>
@@ -387,7 +394,7 @@ export default function ResourcesManagement() {
                     <Button variant="outline" onClick={() => setSelectedResource(null)}>
                       Close
                     </Button>
-                    <Button onClick={() => handleEdit(selectedResource.id)}>
+                    <Button onClick={() => handleEdit(selectedResource._id)}>
                       Edit Resource
                     </Button>
                   </div>
