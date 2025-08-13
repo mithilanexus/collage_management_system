@@ -232,27 +232,7 @@ export default function AddPrimaryClass() {
                 {errors.grade && (
                   <p className="text-sm text-red-600 mt-1">{errors.grade}</p>
                 )}
-              </div>
-              <div>
-                <Label htmlFor="nepaliName">Nepali Name *</Label>
-                <Input
-                  id="nepaliName"
-                  name="nepaliName"
-                  placeholder="e.g., कक्षा १"
-                  value={formData.nepaliName}
-                  onChange={handleInputChange}
-                  required
-                  className={errors.nepaliName ? "border-red-500" : ""}
-                />
-                {errors.nepaliName && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {errors.nepaliName}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              </div> 
               <div>
                 <Label htmlFor="fullName">Full Name *</Label>
                 <Input
@@ -268,6 +248,10 @@ export default function AddPrimaryClass() {
                   <p className="text-sm text-red-600 mt-1">{errors.fullName}</p>
                 )}
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
               <div>
                 <Label htmlFor="ageGroup">Age Group *</Label>
                 <Input
@@ -282,51 +266,38 @@ export default function AddPrimaryClass() {
                   <p className="text-sm text-red-600 mt-1">{errors.ageGroup}</p>
                 )}
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div>
+                  <Label htmlFor="sections" >Number of Sections</Label>
+                  <Input
+                    id="sections"
+                    name="sections"
+                    type="number"
+                    placeholder="1"
+                    value={formData.sections}
+                    onChange={handleInputChange}
+                    className={errors.sections ? "border-red-500" : ""}
+                  />
+                  {errors.sections && (
+                    <p className="text-sm text-red-600 mt-1">{errors.sections}</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="weeklyHours">Weekly Hours</Label>
+                  <Input
+                    id="weeklyHours"
+                    name="weeklyHours"
+                    type="number"
+                    placeholder="30"
+                    value={formData.weeklyHours}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="students">Number of Students</Label>
-                <Input
-                  id="students"
-                  name="students"
-                  type="number"
-                  placeholder="45"
-                  value={formData.students}
-                  onChange={handleInputChange}
-                  className={errors.students ? "border-red-500" : ""}
-                />
-                {errors.students && (
-                  <p className="text-sm text-red-600 mt-1">{errors.students}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="sections">Number of Sections</Label>
-                <Input
-                  id="sections"
-                  name="sections"
-                  type="number"
-                  placeholder="1"
-                  value={formData.sections}
-                  onChange={handleInputChange}
-                  className={errors.sections ? "border-red-500" : ""}
-                />
-                {errors.sections && (
-                  <p className="text-sm text-red-600 mt-1">{errors.sections}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="weeklyHours">Weekly Hours</Label>
-                <Input
-                  id="weeklyHours"
-                  name="weeklyHours"
-                  type="number"
-                  placeholder="30"
-                  value={formData.weeklyHours}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
+         
 
             <div>
               <Label htmlFor="description">Description</Label>

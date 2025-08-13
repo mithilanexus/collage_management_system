@@ -1,0 +1,39 @@
+import mongoose, { Schema } from "mongoose";
+const primarySubjectSchema = new Schema(
+  {
+    name: {
+      type: String,
+      required: true
+    },
+    code: {
+      type: String,
+      required: true
+    },
+    type: {
+      type: String,
+      required: true
+    },
+    mandatory: {
+      type: Boolean,
+      required: true
+    },
+    description: {
+      type: String,
+      required: true
+    },
+    status: {
+      type: String,
+      required: true
+    },
+    objectives: [String],
+    subjectLevel: {
+      type: String,
+      default: "primary"
+    }
+  },
+  { timestamps: true }
+);
+
+const PrimarySubjectModel = mongoose.models.PrimarySubject || mongoose.model("PrimarySubject", primarySubjectSchema);
+
+export default PrimarySubjectModel;

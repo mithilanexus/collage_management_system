@@ -7,15 +7,27 @@ const primaryClassSchema = new Schema(
     },
     fullName: {
       type: String,
-      required: true,
+      required: false,
     },
     ageGroup: {
       type: String,
-      required: true,
+      required: false,
     },
-    students: {
-      type: Number,
-      default: 0,
+    students: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Student",
+      },
+    ],
+    teachers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Teacher",
+      },
+    ],
+    classTeacher: {
+      type: Schema.Types.ObjectId,
+      ref: "Teacher",
     },
     sections: {
       type: Number,
@@ -24,7 +36,7 @@ const primaryClassSchema = new Schema(
     weeklyHours: {
       type: Number,
       default: 30,
-    }, 
+    },
     description: {
       type: String,
     },

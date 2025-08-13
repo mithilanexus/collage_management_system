@@ -1,13 +1,13 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
+import {
   ArrowLeft,
   Search,
   Plus,
@@ -25,88 +25,59 @@ import { toast } from "sonner";
 
 export default function PrimarySubjects() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterGrade, setFilterGrade] = useState("all");
   const [filterType, setFilterType] = useState("all");
+  const [primarySubjects, setPrimarySubjects] = useState([]);
 
-  // Mock data for primary subjects
-  const primarySubjects = [
-    {
-      id: "pri_001",
-      name: "Nepali",
-      nepaliName: "नेपाली",
-      code: "NEP-01",
-      grade: "Grade 1",
-      type: "Core",
-      mandatory: true,
-      teachers: 2,
-      students: 25,
-      description: "Basic Nepali language skills",
-      status: "Active"
-    },
-    {
-      id: "pri_002",
-      name: "English",
-      nepaliName: "अंग्रेजी",
-      code: "ENG-01",
-      grade: "Grade 1",
-      type: "Core",
-      mandatory: true,
-      teachers: 2,
-      students: 25,
-      description: "Basic English language skills",
-      status: "Active"
-    },
-    {
-      id: "pri_003",
-      name: "Mathematics",
-      nepaliName: "गणित",
-      code: "MATH-02",
-      grade: "Grade 2",
-      type: "Core",
-      mandatory: true,
-      teachers: 1,
-      students: 28,
-      description: "Basic mathematical concepts",
-      status: "Active"
-    },
-    {
-      id: "pri_004",
-      name: "Science",
-      nepaliName: "विज्ञान",
-      code: "SCI-03",
-      grade: "Grade 3",
-      type: "Core",
-      mandatory: true,
-      teachers: 1,
-      students: 30,
-      description: "Introduction to basic science",
-      status: "Active"
+  useEffect(() => {
+    getPrimarySubjects();
+  }, []);
+
+  const getPrimarySubjects = async () => {
+    try {
+      const response = await fetch("/api/admin/courses/subjects/primary");
+      const data = await response.json();
+      setPrimarySubjects(data.data);
+    } catch (error) {
+      console.error("Error fetching primary subjects:", error);
+      return [];
     }
-  ];
+  };
 
-  const filteredSubjects = primarySubjects.filter(subject => {
-    const matchesSearch = subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         subject.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         subject.nepaliName.includes(searchTerm);
-    
-    const matchesGrade = filterGrade === "all" || subject.grade === filterGrade;
-    const matchesType = filterType === "all" || subject.type === filterType;
-    
-    return matchesSearch && matchesGrade && matchesType;
+  const filteredSubjects = primarySubjects.filter((subject) => {
+    const matchesSearch =
+      subject.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      subject.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      subject.description?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesType = filterType === "all" || subject.type.toLowerCase() === filterType.toLowerCase();
+
+    return matchesSearch && matchesType;
   });
 
-  const handleDelete = (subjectId) => {
-    if (confirm("Are you sure you want to delete this subject? This action cannot be undone.")) {
-      console.log("Deleting subject:", subjectId);
-      toast.success("Subject deleted successfully!");
+
+  const handleDelete = async (subjectId) => {
+    try {
+      const response = await fetch(`/api/admin/courses/subjects/primary/${subjectId}`, {
+        method: "DELETE"
+      });
+      const data = await response.json();
+      console.log(data);
+      if (data.success) {
+        toast.success("Subject deleted successfully!");
+        getPrimarySubjects();
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error("Error deleting subject:", error);
+      toast.error(error.message);
     }
+
   };
 
   const stats = {
     total: primarySubjects.length,
-    active: primarySubjects.filter(s => s.status === "Active").length,
-    teachers: primarySubjects.reduce((sum, s) => sum + s.teachers, 0),
-    students: primarySubjects.reduce((sum, s) => sum + s.students, 0)
+    active: primarySubjects.filter(s => s.status === "active").length,
   };
 
   return (
@@ -126,7 +97,7 @@ export default function PrimarySubjects() {
               Primary Level Subjects
             </h1>
             <p className="text-muted-foreground">
-              Manage subjects for grades 1-5
+              Manage subjects for grades 1-8
             </p>
           </div>
         </div>
@@ -166,32 +137,6 @@ export default function PrimarySubjects() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <Users className="w-6 h-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.teachers}</p>
-                <p className="text-sm text-muted-foreground">Total Teachers</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-orange-100 rounded-lg">
-                <School className="w-6 h-6 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.students}</p>
-                <p className="text-sm text-muted-foreground">Enrolled Students</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Search and Filters */}
@@ -207,29 +152,16 @@ export default function PrimarySubjects() {
                 className="pl-10"
               />
             </div>
-            <Select value={filterGrade} onValueChange={setFilterGrade}>
-              <SelectTrigger className="w-[150px]">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Grade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Grades</SelectItem>
-                <SelectItem value="Grade 1">Grade 1</SelectItem>
-                <SelectItem value="Grade 2">Grade 2</SelectItem>
-                <SelectItem value="Grade 3">Grade 3</SelectItem>
-                <SelectItem value="Grade 4">Grade 4</SelectItem>
-                <SelectItem value="Grade 5">Grade 5</SelectItem>
-              </SelectContent>
-            </Select>
+
             <Select value={filterType} onValueChange={setFilterType}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="Core">Core</SelectItem>
-                <SelectItem value="Elective">Elective</SelectItem>
-                <SelectItem value="Optional">Optional</SelectItem>
+                <SelectItem value="core">Core</SelectItem>
+                <SelectItem value="elective">Elective</SelectItem>
+                <SelectItem value="optional">Optional</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -239,58 +171,59 @@ export default function PrimarySubjects() {
       {/* Subjects List */}
       <div className="space-y-4">
         {filteredSubjects.map((subject) => (
-          <Card key={subject.id} className="hover:shadow-md transition-shadow">
+          <Card key={subject._id} className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
+                {/* Subject Details */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-4">
                     <div>
-                      <h3 className="font-semibold text-lg">{subject.name}</h3>
-                      <p className="text-muted-foreground text-sm">{subject.nepaliName}</p>
+                      <h3 className="font-semibold text-lg">{subject.name || "Untitled Subject"}</h3>
+                      <p className="text-muted-foreground text-sm">
+                        {subject.code || "No code"}
+                      </p>
                     </div>
                     <div className="flex gap-2">
                       <Badge variant={subject.status === "Active" ? "default" : "secondary"}>
-                        {subject.status}
+                        {subject.status || "Draft"}
                       </Badge>
                       <Badge variant="outline" className="text-xs">
-                        {subject.grade}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {subject.type}
+                        {subject.type || "No type"}
                       </Badge>
                       {subject.mandatory && (
                         <Badge variant="outline" className="text-xs">Required</Badge>
                       )}
                     </div>
                   </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm text-muted-foreground">
-                    <span>Code: {subject.code}</span>
-                    <span>Grade: {subject.grade}</span>
-                    <span>Type: {subject.type}</span>
-                    <span>Teachers: {subject.teachers}</span>
-                    <span>Students: {subject.students}</span>
+
+                  {/* Additional Info */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                    <span>Objectives: {subject.objectives || "Not specified"}</span>
                   </div>
-                  
-                  <p className="text-sm text-muted-foreground">{subject.description}</p>
+
+                  {/* Description */}
+                  <p className="text-sm text-muted-foreground">
+                    {subject.description || "No description available"}
+                  </p>
                 </div>
-                
+
+                {/* Action Buttons */}
                 <div className="flex items-center gap-2">
-                  <Link href={`/admin/courses/subjects/primary/${subject.id}`}>
+                  <Link href={`/admin/courses/subjects/primary/${subject._id}`}>
                     <Button variant="outline" size="sm">
                       <Eye className="w-4 h-4" />
                     </Button>
                   </Link>
-                  <Link href={`/admin/courses/subjects/primary/${subject.id}/edit`}>
+                  <Link href={`/admin/courses/subjects/primary/${subject._id}/edit`}>
                     <Button variant="outline" size="sm">
                       <Edit className="w-4 h-4" />
                     </Button>
                   </Link>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="text-red-600 hover:text-red-700"
-                    onClick={() => handleDelete(subject.id)}
+                    onClick={() => handleDelete(subject._id)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -300,6 +233,7 @@ export default function PrimarySubjects() {
           </Card>
         ))}
       </div>
+
 
       {filteredSubjects.length === 0 && (
         <div className="text-center py-12">

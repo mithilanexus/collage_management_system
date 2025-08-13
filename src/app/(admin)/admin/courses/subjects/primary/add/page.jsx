@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { 
+import {
   ArrowLeft,
   Save,
   BookOpen,
@@ -18,20 +18,19 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function AddPrimarySubject() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
-    nepaliName: "",
     code: "",
-    gradeFrom: "",
-    gradeTo: "",
     type: "",
     mandatory: false,
-    credits: "",
     description: "",
     objectives: "",
     status: "draft"
+
   });
 
   const handleInputChange = (field, value) => {
@@ -41,32 +40,45 @@ export default function AddPrimarySubject() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Basic validation
-    if (!formData.name || !formData.code || !formData.gradeFrom || !formData.gradeTo) {
+    if (!formData.name || !formData.code || !formData.type || !formData.mandatory || !formData.description || !formData.objectives || !formData.status) {
       toast.error("Please fill in all required fields");
       return;
     }
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/subjects/primary`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+      console.log(data);
+      if (data.success) {
+        toast.success("Subject added successfully");
+        router.push("/admin/courses/subjects/primary");
 
-    console.log("Adding primary subject:", formData);
-    toast.success("Primary subject added successfully!");
-    
-    // Reset form or redirect
-    setFormData({
-      name: "",
-      nepaliName: "",
-      code: "",
-      gradeFrom: "",
-      gradeTo: "",
-      type: "",
-      mandatory: false,
-      credits: "",
-      description: "",
-      objectives: "",
-      status: "draft"
-    });
+        setFormData({
+          name: "",
+          code: "",
+          type: "",
+          mandatory: false,
+          description: "",
+          objectives: "",
+          status: "draft"
+        });
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+
+
   };
 
   return (
@@ -113,102 +125,40 @@ export default function AddPrimarySubject() {
                   required
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="nepaliName">
-                  Nepali Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="nepaliName"
-                  value={formData.nepaliName}
-                  onChange={(e) => handleInputChange("nepaliName", e.target.value)}
-                  placeholder="e.g., गणित"
-                  required
-                />
+
+              <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="code">
+                    Subject Code <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="code"
+                    value={formData.code}
+                    onChange={(e) => handleInputChange("code", e.target.value)}
+                    placeholder="e.g., MAT-101"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="type">
+                    Subject Type <span className="text-red-500">*</span>
+                  </Label>
+                  <Select value={formData.type} onValueChange={(value) => handleInputChange("type", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="core">Core Subject</SelectItem>
+                      <SelectItem value="optional">Optional Subject</SelectItem>
+                      <SelectItem value="extracurricular">Extra-curricular</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="code">
-                  Subject Code <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="code"
-                  value={formData.code}
-                  onChange={(e) => handleInputChange("code", e.target.value)}
-                  placeholder="e.g., MAT-101"
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="type">
-                  Subject Type <span className="text-red-500">*</span>
-                </Label>
-                <Select value={formData.type} onValueChange={(value) => handleInputChange("type", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="core">Core Subject</SelectItem>
-                    <SelectItem value="optional">Optional Subject</SelectItem>
-                    <SelectItem value="extracurricular">Extra-curricular</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="credits">Credits</Label>
-                <Input
-                  id="credits"
-                  type="number"
-                  value={formData.credits}
-                  onChange={(e) => handleInputChange("credits", e.target.value)}
-                  placeholder="e.g., 4"
-                  min="1"
-                  max="10"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="gradeFrom">
-                  From Grade <span className="text-red-500">*</span>
-                </Label>
-                <Select value={formData.gradeFrom} onValueChange={(value) => handleInputChange("gradeFrom", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select starting grade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Grade 1</SelectItem>
-                    <SelectItem value="2">Grade 2</SelectItem>
-                    <SelectItem value="3">Grade 3</SelectItem>
-                    <SelectItem value="4">Grade 4</SelectItem>
-                    <SelectItem value="5">Grade 5</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="gradeTo">
-                  To Grade <span className="text-red-500">*</span>
-                </Label>
-                <Select value={formData.gradeTo} onValueChange={(value) => handleInputChange("gradeTo", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select ending grade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Grade 1</SelectItem>
-                    <SelectItem value="2">Grade 2</SelectItem>
-                    <SelectItem value="3">Grade 3</SelectItem>
-                    <SelectItem value="4">Grade 4</SelectItem>
-                    <SelectItem value="5">Grade 5</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
 
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -245,6 +195,7 @@ export default function AddPrimarySubject() {
               <Textarea
                 id="objectives"
                 value={formData.objectives}
+
                 onChange={(e) => handleInputChange("objectives", e.target.value)}
                 placeholder="List the main learning objectives for this subject..."
                 rows={3}
@@ -277,7 +228,7 @@ export default function AddPrimarySubject() {
                   Primary Level Guidelines
                 </p>
                 <p className="text-sm text-orange-700">
-                  Primary subjects should focus on foundational skills. Core subjects (Nepali, English, Mathematics) 
+                  Primary subjects should focus on foundational skills. Core subjects (Nepali, English, Mathematics)
                   are typically mandatory across all grades. Consider age-appropriate content and teaching methods.
                 </p>
               </div>
