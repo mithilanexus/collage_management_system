@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Search, 
-  Plus, 
-  Eye, 
-  Edit, 
+import {
+  Search,
+  Plus,
+  Eye,
+  Edit,
   Trash2,
   Megaphone,
   Calendar,
@@ -17,88 +17,13 @@ import {
   Pin,
   AlertCircle
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
-// Mock data for announcements (Nepali college system)
-const mockAnnouncements = [
-  {
-    id: 1,
-    title: "First Semester Examination Schedule 2024",
-    content: "The first semester examinations for all programs will commence from May 20, 2024. Students are advised to check their exam schedules and prepare accordingly. Admit cards will be distributed from May 15, 2024.",
-    category: "Academic",
-    priority: "High",
-    targetAudience: "All Students",
-    publishDate: "2024-01-15",
-    expiryDate: "2024-05-25",
-    status: "Published",
-    author: "Academic Office",
-    isPinned: true,
-    views: 1250,
-    image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=200&fit=crop"
-  },
-  {
-    id: 2,
-    title: "New Library Books Collection Available",
-    content: "The college library has received a new collection of 500+ books covering various subjects including literature, science, and business studies. Students can now access these books for reference and borrowing.",
-    category: "Library",
-    priority: "Medium",
-    targetAudience: "All Students",
-    publishDate: "2024-01-12",
-    expiryDate: "2024-03-12",
-    status: "Published",
-    author: "Library Department",
-    isPinned: false,
-    views: 890,
-    image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=200&fit=crop"
-  },
-  {
-    id: 3,
-    title: "Annual Sports Week 2024",
-    content: "The college annual sports week will be held from February 15-20, 2024. Various indoor and outdoor games will be organized. Interested students should register with the sports department by February 10, 2024.",
-    category: "Sports",
-    priority: "Medium",
-    targetAudience: "All Students",
-    publishDate: "2024-01-10",
-    expiryDate: "2024-02-20",
-    status: "Published",
-    author: "Sports Department",
-    isPinned: true,
-    views: 675,
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=200&fit=crop"
-  },
-  {
-    id: 4,
-    title: "Fee Payment Deadline Extension",
-    content: "Due to technical issues with the online payment system, the fee payment deadline has been extended to January 31, 2024. Students can pay fees through bank transfer or visit the accounts office.",
-    category: "Finance",
-    priority: "High",
-    targetAudience: "All Students",
-    publishDate: "2024-01-08",
-    expiryDate: "2024-02-01",
-    status: "Published",
-    author: "Accounts Office",
-    isPinned: false,
-    views: 1100,
-    image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=200&fit=crop"
-  },
-  {
-    id: 5,
-    title: "Guest Lecture on Digital Marketing",
-    content: "A special guest lecture on 'Digital Marketing Trends 2024' will be conducted by Mr. Rajesh Hamal, Marketing Director at ABC Company, on January 25, 2024, at 2:00 PM in the main auditorium.",
-    category: "Academic",
-    priority: "Medium",
-    targetAudience: "BBS Students",
-    publishDate: "2024-01-05",
-    expiryDate: "2024-01-26",
-    status: "Draft",
-    author: "Business Department",
-    isPinned: false,
-    views: 0,
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=200&fit=crop"
-  }
-];
+
 
 export default function AnnouncementsManagement() {
-  const [announcements, setAnnouncements] = useState(mockAnnouncements);
+  const [announcements, setAnnouncements] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
 
@@ -108,23 +33,51 @@ export default function AnnouncementsManagement() {
     announcement.targetAudience.toLowerCase().includes(searchTerm.toLowerCase()) ||
     announcement.author.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const router = useRouter()
+
+  const getAnnouncements = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/communications/announcements`);
+      const data = await response.json();
+      setAnnouncements(data.data);
+    } catch (error) {
+      console.error("Error fetching announcements:", error);
+    }
+  };
+
+  useEffect(() => {
+    getAnnouncements();
+  }, []);
 
   const handleView = (announcement) => {
     setSelectedAnnouncement(announcement);
   };
 
   const handleEdit = (announcementId) => {
-    window.location.href = `/admin/communications/announcements/${announcementId}/edit`;
+    router.push(`/admin/communications/announcements/${announcementId}/edit`);
   };
 
-  const handleDelete = (announcementId) => {
-    if (confirm("Are you sure you want to delete this announcement?")) {
-      setAnnouncements(announcements.filter(a => a.id !== announcementId));
+  const handleDelete = async (announcementId) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/communications/announcements/${announcementId}`, {
+        method: "DELETE",
+      });
+      const data = await response.json();
+      if (data.success) {
+        const updatedAnnouncements = announcements.filter(a => a._id !== announcementId);
+        setAnnouncements(updatedAnnouncements);
+        toast.success(data.message);
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error("Error deleting announcement:", error);
+      toast.error(error.message);
     }
   };
 
   const togglePin = (announcementId) => {
-    setAnnouncements(announcements.map(a => 
+    setAnnouncements(announcements.map(a =>
       a.id === announcementId ? { ...a, isPinned: !a.isPinned } : a
     ));
   };
@@ -230,10 +183,10 @@ export default function AnnouncementsManagement() {
       {/* Announcements Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredAnnouncements.map((announcement) => (
-          <Card key={announcement.id} className="hover:shadow-lg transition-shadow">
+          <Card key={announcement._id} className="hover:shadow-lg transition-shadow">
             <div className="aspect-video relative overflow-hidden rounded-t-lg">
-              <img 
-                src={announcement.image} 
+              <img
+                src={announcement.image}
                 alt={announcement.title}
                 className="w-full h-full object-cover"
               />
@@ -263,7 +216,7 @@ export default function AnnouncementsManagement() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground line-clamp-3">{announcement.content}</p>
-              
+
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Target:</span>
@@ -304,14 +257,14 @@ export default function AnnouncementsManagement() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleEdit(announcement.id)}
+                  onClick={() => handleEdit(announcement._id)}
                 >
                   <Edit className="w-3 h-3" />
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleDelete(announcement.id)}
+                  onClick={() => handleDelete(announcement._id)}
                   className="text-destructive hover:text-destructive"
                 >
                   <Trash2 className="w-3 h-3" />
@@ -335,8 +288,8 @@ export default function AnnouncementsManagement() {
             <CardContent className="space-y-6">
               {/* Announcement Image */}
               <div className="aspect-video relative overflow-hidden rounded-lg">
-                <img 
-                  src={selectedAnnouncement.image} 
+                <img
+                  src={selectedAnnouncement.image}
                   alt={selectedAnnouncement.title}
                   className="w-full h-full object-cover"
                 />
@@ -396,7 +349,7 @@ export default function AnnouncementsManagement() {
                 <Button variant="outline" onClick={() => setSelectedAnnouncement(null)}>
                   Close
                 </Button>
-                <Button onClick={() => handleEdit(selectedAnnouncement.id)}>
+                <Button onClick={() => handleEdit(selectedAnnouncement._id)}>
                   Edit Announcement
                 </Button>
               </div>

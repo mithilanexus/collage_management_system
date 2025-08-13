@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { toast } from "sonner";
 import { Megaphone, ArrowLeft } from "lucide-react";
+import { useEffect } from "react";
 
 const schema = z.object({
   title: z.string().min(1),
@@ -47,11 +48,43 @@ export default function EditAnnouncementPage() {
       image: "",
     },
   });
-
+  const getAnnouncement = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/communications/announcements/${announcementId}`);
+      const data = await response.json();
+      if (data.success) {
+        form.reset(data.data);
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching announcement:", error);
+      toast.error(error.message);
+    }
+  };
+  useEffect(() => {
+    getAnnouncement();
+  }, []);
   const onSubmit = async (values) => {
-    console.log("Update Announcement", { id: announcementId, ...values });
-    toast.success("Announcement updated (frontend only)");
-    router.push("/admin/communications/announcements");
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/communications/announcements/${announcementId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success(data.message);
+        router.push("/admin/communications/announcements");
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error("Error updating announcement:", error);
+      toast.error(error.message);
+    }
   };
 
   return (

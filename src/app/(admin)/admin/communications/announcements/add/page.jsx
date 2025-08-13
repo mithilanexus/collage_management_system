@@ -48,9 +48,25 @@ export default function AddAnnouncementPage() {
   });
 
   const onSubmit = async (values) => {
-    console.log("Create Announcement payload", values);
-    toast.success("Announcement created (frontend only)");
-    router.push("/admin/communications/announcements");
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/communications/announcements`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success(data.message);
+        router.push("/admin/communications/announcements");
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error("Error creating announcement:", error);
+      toast.error(error.message);
+    }
   };
 
   return (
