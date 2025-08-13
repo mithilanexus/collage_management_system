@@ -42,9 +42,11 @@ export default function PrimaryLevel() {
   const [filterBy, setFilterBy] = useState("all");
   const [viewMode, setViewMode] = useState("grid");
   const [primaryClasses, setPrimaryClasses] = useState([]);
+  const [coreSubjects, setCoreSubjects] = useState([]);
 
   useEffect(() => {
     fetchPrimaryClasses();
+    fetchCoreSubjects();
   }, []);
 
   const fetchPrimaryClasses = async () => {
@@ -59,22 +61,18 @@ export default function PrimaryLevel() {
     }
   };
 
-  const coreSubjects = [
-    { name: "Nepali", code: "NEP", type: "Language", mandatory: true },
-    { name: "English", code: "ENG", type: "Language", mandatory: true },
-    { name: "Mathematics", code: "MATH", type: "Science", mandatory: true },
-    { name: "Science", code: "SCI", type: "Science", mandatory: true },
-    { name: "Social Studies", code: "SS", type: "Social", mandatory: true },
-    {
-      name: "Health & Physical Education",
-      code: "HPE",
-      type: "Physical",
-      mandatory: true,
-    },
-    { name: "Computer", code: "COMP", type: "Technology", mandatory: false },
-    { name: "Moral Education", code: "ME", type: "Ethics", mandatory: false },
-  ];
-
+  const fetchCoreSubjects = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/subjects/primary`
+      );
+      const data = await res.json();
+      setCoreSubjects([...data.data.filter((subject) => subject.type === "core")]);
+    } catch (error) {
+      console.error("Error fetching core subjects:", error);
+    }
+  };
+ 
   const handleDelete = async (classId) => {
     try {
       const res = await fetch(
@@ -365,7 +363,7 @@ export default function PrimaryLevel() {
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center p-3 bg-muted/50 rounded-lg">
                       <p className="text-lg font-bold text-foreground">
-                        {cls.students}
+                        {cls.students.length}
                       </p>
                       <p className="text-xs text-muted-foreground">Students</p>
                     </div>

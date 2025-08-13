@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,7 @@ export default function AddPrimaryClass() {
     nepaliName: "",
     fullName: "",
     ageGroup: "",
-    students: "",
+    students: [],
     sections: "1",
     weeklyHours: "30",
     curriculum: "",
@@ -38,27 +38,9 @@ export default function AddPrimaryClass() {
   });
   const router = useRouter()
   const [selectedSubjects, setSelectedSubjects] = useState([]);
-  const [customSubject, setCustomSubject] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
-
-  const availableSubjects = [
-    { name: "Nepali", code: "NEP", mandatory: true, hours: 6 },
-    { name: "English", code: "ENG", mandatory: true, hours: 5 },
-    { name: "Mathematics", code: "MATH", mandatory: true, hours: 6 },
-    { name: "Science", code: "SCI", mandatory: true, hours: 4 },
-    { name: "Social Studies", code: "SS", mandatory: true, hours: 4 },
-    {
-      name: "Health & Physical Education",
-      code: "HPE",
-      mandatory: true,
-      hours: 3,
-    },
-    { name: "Computer", code: "COMP", mandatory: false, hours: 2 },
-    { name: "Moral Education", code: "ME", mandatory: false, hours: 2 },
-    { name: "Art & Craft", code: "ART", mandatory: false, hours: 2 },
-    { name: "Music", code: "MUS", mandatory: false, hours: 1 },
-  ];
+  const [availableSubjects, setAvailableSubjects] = useState([]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -76,27 +58,45 @@ export default function AddPrimaryClass() {
     }
   };
 
+  useEffect(() => {
+    getAviableSubjects();
+  }, []);
   const handleSubjectToggle = (subject) => {
     setSelectedSubjects((prev) => {
-      const exists = prev.find((s) => s.code === subject.code);
+      const exists = prev.find((s) => s._id === subject._id);
+
       if (exists) {
-        return prev.filter((s) => s.code !== subject.code);
+        // Toggle by creating a new array with updated object
+        return prev.map((s) =>
+          s._id === subject._id ? { ...s, mandatory: !s.mandatory } : s
+        );
       } else {
-        return [...prev, subject];
+        // Add new subject as is
+        return [...prev, { ...subject }];
       }
     });
+
+    // Also update availableSubjects to reflect the change
+    setAvailableSubjects((prev) =>
+      prev.map((s) =>
+        s._id === subject._id ? { ...s, mandatory: !s.mandatory } : s
+      )
+    );
   };
 
-  const addCustomSubject = () => {
-    if (customSubject.trim()) {
-      const newSubject = {
-        name: customSubject,
-        code: customSubject.toUpperCase().replace(/\s+/g, ""),
-        mandatory: false,
-        hours: 2,
-      };
-      setSelectedSubjects((prev) => [...prev, newSubject]);
-      setCustomSubject("");
+
+  const getAviableSubjects = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/subjects/primary`
+      );
+      const data = await res.json();
+      setAvailableSubjects([...data.data]);
+      setSelectedSubjects(
+        data.data.filter((subject) => subject.mandatory)
+      )
+    } catch (error) {
+      console.error("Error fetching subjects:", error);
     }
   };
 
@@ -110,32 +110,19 @@ export default function AddPrimaryClass() {
     if (!formData.grade.trim()) {
       newErrors.grade = "Grade is required";
     }
+    const requiredFields = ["fullName", "ageGroup"];
+    requiredFields.forEach((name) => {
+      if (!formData[name].trim()) {
+        newErrors[name] = `${name.charAt(0).toUpperCase() + name.slice(1)} is required`;
+      }
+    });
 
-    if (!formData.nepaliName.trim()) {
-      newErrors.nepaliName = "Nepali name is required";
-    }
-
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = "Full name is required";
-    }
-
-    if (!formData.ageGroup.trim()) {
-      newErrors.ageGroup = "Age group is required";
-    }
-
-    if (
-      formData.students &&
-      (isNaN(formData.students) || parseInt(formData.students) < 1)
-    ) {
-      newErrors.students = "Please enter a valid number of students";
-    }
-
-    if (
-      formData.sections &&
-      (isNaN(formData.sections) || parseInt(formData.sections) < 1)
-    ) {
-      newErrors.sections = "Please enter a valid number of sections";
-    }
+    const numericalFields = ["sections"];
+    numericalFields.forEach((name) => {
+      if (isNaN(formData[name]) || parseInt(formData[name]) < 1) {
+        newErrors[name] = `Please enter a valid number of ${name}`;
+      }
+    });
 
     if (selectedSubjects.length === 0) {
       newErrors.subjects = "Please select at least one subject";
@@ -170,12 +157,6 @@ export default function AddPrimaryClass() {
         router.push("/admin/courses/primary");
       }
 
-      const classData = {
-        ...formData,
-        subjects: selectedSubjects,
-        id: Date.now(),
-        createdAt: new Date().toISOString(),
-      };
     } catch (error) {
       toast.error("Failed to add class. Please try again.");
       console.error("Submit error:", error);
@@ -184,10 +165,6 @@ export default function AddPrimaryClass() {
     }
   };
 
-  const totalWeeklyHours = selectedSubjects.reduce(
-    (total, subject) => total + subject.hours,
-    0
-  );
 
   return (
     <div className="space-y-6">
@@ -232,7 +209,7 @@ export default function AddPrimaryClass() {
                 {errors.grade && (
                   <p className="text-sm text-red-600 mt-1">{errors.grade}</p>
                 )}
-              </div> 
+              </div>
               <div>
                 <Label htmlFor="fullName">Full Name *</Label>
                 <Input
@@ -251,7 +228,7 @@ export default function AddPrimaryClass() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
+
               <div>
                 <Label htmlFor="ageGroup">Age Group *</Label>
                 <Input
@@ -297,7 +274,7 @@ export default function AddPrimaryClass() {
               </div>
             </div>
 
-         
+
 
             <div>
               <Label htmlFor="description">Description</Label>
@@ -315,15 +292,30 @@ export default function AddPrimaryClass() {
 
         {/* Subject Selection */}
         <Card>
-          <CardHeader>
-            <CardTitle>Subject Selection</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Select subjects for this class. Mandatory subjects are
-              pre-selected.
-            </p>
-            {errors.subjects && (
-              <p className="text-sm text-red-600">{errors.subjects}</p>
-            )}
+          <CardHeader className="flex items-center justify-between">
+            <div>
+
+              <CardTitle>Subject Selection</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Select subjects for this class. Mandatory subjects are
+                pre-selected.
+              </p>
+              {errors.subjects && (
+                <p className="text-sm text-red-600">{errors.subjects}</p>
+              )}
+            </div>
+            <div>
+              <Link href="/admin/courses/subjects/primary/add">
+                <Button
+                  type="button"
+                  className="flex items-center gap-2"
+
+                >
+                  <Plus className="w-4 h-4" /> Add New Subject
+                </Button>
+              </Link>
+
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Available Subjects */}
@@ -333,20 +325,28 @@ export default function AddPrimaryClass() {
               </Label>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
                 {availableSubjects.map((subject) => {
-                  const isSelected = selectedSubjects.find(
-                    (s) => s.code === subject.code
-                  );
                   return (
                     <div
                       key={subject.code}
                       className="flex items-center space-x-2 p-3 border rounded-lg"
                     >
-                      <Checkbox
-                        id={subject.code}
-                        checked={isSelected}
-                        onCheckedChange={() => handleSubjectToggle(subject)}
-                        disabled={subject.mandatory}
-                      />
+                      {
+                        subject.mandatory ? (
+                          <Checkbox
+                            id={subject.code}
+                            checked={subject.mandatory}
+                            onCheckedChange={() => handleSubjectToggle(subject)}
+                          />
+                        ) : (
+                          <Checkbox
+                            id={subject.code}
+                            checked={subject.mandatory}
+                            onCheckedChange={() => handleSubjectToggle(subject)}
+
+                          />
+                        )
+                      }
+
                       <div className="flex-1">
                         <Label htmlFor={subject.code} className="font-medium">
                           {subject.name}
@@ -371,22 +371,6 @@ export default function AddPrimaryClass() {
               </div>
             </div>
 
-            {/* Add Custom Subject */}
-            <div>
-              <Label className="text-base font-medium">
-                Add Custom Subject
-              </Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  placeholder="Enter subject name"
-                  value={customSubject}
-                  onChange={(e) => setCustomSubject(e.target.value)}
-                />
-                <Button type="button" onClick={addCustomSubject}>
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
 
             {/* Selected Subjects */}
             {selectedSubjects.length > 0 && (
@@ -402,8 +386,7 @@ export default function AddPrimaryClass() {
                       className="flex items-center gap-1"
                     >
                       {subject.name}
-                      <span className="text-xs">({subject.hours}h)</span>
-                      {!subject.mandatory && (
+                      {(
                         <button
                           type="button"
                           onClick={() => removeSubject(subject.code)}
@@ -415,9 +398,7 @@ export default function AddPrimaryClass() {
                     </Badge>
                   ))}
                 </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Total Weekly Hours: {totalWeeklyHours} hours
-                </p>
+
               </div>
             )}
           </CardContent>
@@ -429,12 +410,8 @@ export default function AddPrimaryClass() {
             <CardTitle>Class Summary</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-muted/50 rounded-lg">
-                <Users className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-                <p className="text-2xl font-bold">{formData.students || "0"}</p>
-                <p className="text-sm text-muted-foreground">Students</p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <School className="w-6 h-6 mx-auto mb-2 text-green-600" />
                 <p className="text-2xl font-bold">{formData.sections || "1"}</p>
@@ -447,7 +424,7 @@ export default function AddPrimaryClass() {
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <Clock className="w-6 h-6 mx-auto mb-2 text-orange-600" />
-                <p className="text-2xl font-bold">{totalWeeklyHours}</p>
+                <p className="text-2xl font-bold">{formData.weeklyHours || "0"}</p>
                 <p className="text-sm text-muted-foreground">Hours/Week</p>
               </div>
             </div>
