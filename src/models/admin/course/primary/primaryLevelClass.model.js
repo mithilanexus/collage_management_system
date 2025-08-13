@@ -44,7 +44,7 @@ const primaryClassSchema = new Schema(
     subjects: [
       {
         type: Schema.Types.ObjectId,
-        ref: "Subject",
+        ref: "PrimarySubject",
       },
     ],
   },

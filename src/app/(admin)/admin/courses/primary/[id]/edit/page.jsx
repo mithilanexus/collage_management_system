@@ -15,9 +15,8 @@ import {
   X,
   School,
   Save,
-  Users,
-  Clock,
   BookOpen,
+  Clock,
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
@@ -25,53 +24,30 @@ import { toast } from "sonner";
 
 export default function EditPrimaryClass() {
   const params = useParams();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     grade: "",
     nepaliName: "",
-    students: "",
+    fullName: "",
+    ageGroup: "",
+    students: [],
     sections: "1",
     weeklyHours: "30",
-    ageGroup: "",
     curriculum: "",
     description: "",
     subjects: [],
   });
-
   const [selectedSubjects, setSelectedSubjects] = useState([]);
-  const [customSubject, setCustomSubject] = useState("");
-
-  const availableSubjects = [
-    { name: "Nepali", code: "NEP", mandatory: true, hours: 6 },
-    { name: "English", code: "ENG", mandatory: true, hours: 5 },
-    { name: "Mathematics", code: "MATH", mandatory: true, hours: 6 },
-    { name: "Science", code: "SCI", mandatory: true, hours: 4 },
-    { name: "Social Studies", code: "SS", mandatory: true, hours: 4 },
-    {
-      name: "Health & Physical Education",
-      code: "HPE",
-      mandatory: true,
-      hours: 3,
-    },
-    { name: "Computer", code: "COMP", mandatory: false, hours: 2 },
-    { name: "Moral Education", code: "ME", mandatory: false, hours: 2 },
-    { name: "Art & Craft", code: "ART", mandatory: false, hours: 2 },
-    { name: "Music", code: "MUS", mandatory: false, hours: 1 },
-  ];
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [availableSubjects, setAvailableSubjects] = useState([]);
 
   useEffect(() => {
-    // Simulate API call
-    fetechClassData();
+    fetchClassData();
   }, [params.id]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-  const fetechClassData = async () => {
+  const fetchClassData = async () => {
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/classes/${params.id}`
@@ -79,84 +55,119 @@ export default function EditPrimaryClass() {
       const data = await res.json();
       setFormData(data.data);
       setSelectedSubjects(data.data.subjects);
+      setAvailableSubjects(data.data.subjects.filter((subject) => subject.mandatory));
       setLoading(false);
     } catch (error) {
+      toast.error("Failed to fetch class data, sweetheart. Try again soon! 💕");
       console.error("Error fetching class data:", error);
-      toast.error("Failed to fetch class data", {
-        description: "Please try again later",
-        duration: 3000,
-      });
     }
-  };
-  const router = useRouter()
-  const handleSubjectToggle = (subject) => {
-    setSelectedSubjects((prev) => {
-      const exists = prev.find((s) => s.code === subject.code);
-      if (exists) {
-        return prev.filter((s) => s.code !== subject.code);
-      } else {
-        return [...prev, subject];
-      }
-    });
   };
 
-  const addCustomSubject = () => {
-    if (customSubject.trim()) {
-      const newSubject = {
-        name: customSubject,
-        code: customSubject.toUpperCase().replace(/\s+/g, ""),
-        mandatory: false,
-        hours: 2,
-      };
-      setSelectedSubjects((prev) => [...prev, newSubject]);
-      setCustomSubject("");
+  const getAvailableSubjects = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/subjects/primary`
+      );
+      const data = await res.json();
+      setAvailableSubjects([...data.data]);
+      setSelectedSubjects(
+        data.data.filter((subject) => subject.mandatory)
+      )
+    } catch (error) {
+      console.error("Error fetching subjects:", error);
     }
+  };
+
+  useEffect(() => {
+    getAvailableSubjects();
+  }, [formData.subjects]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
+  };
+
+  const handleSubjectToggle = (subject) => {
+    setSelectedSubjects((prev) => {
+      const exists = prev.find((s) => s._id === subject._id);
+      if (exists) {
+        return prev.map((s) =>
+          s._id === subject._id ? { ...s, mandatory: !s.mandatory } : s
+        );
+      } else {
+        return [...prev, { ...subject }];
+      }
+    });
+    setAvailableSubjects((prev) =>
+      prev.map((s) =>
+        s._id === subject._id ? { ...s, mandatory: !s.mandatory } : s
+      )
+    );
   };
 
   const removeSubject = (subjectCode) => {
     setSelectedSubjects((prev) => prev.filter((s) => s.code !== subjectCode));
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.grade.trim()) newErrors.grade = "Grade is required, darling!";
+    if (!formData.fullName.trim()) newErrors.fullName = "Full Name is required, lovebug!";
+    if (!formData.ageGroup.trim()) newErrors.ageGroup = "Age Group is required, cutie!";
+    if (isNaN(formData.sections) || parseInt(formData.sections) < 1) {
+      newErrors.sections = "Please enter a valid number of sections, honey!";
+    }
+    if (selectedSubjects.length === 0) {
+      newErrors.subjects = "Please select at least one subject, my prince! 😘";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.grade) {
-      toast.error("Please fill in all required fields");
+    if (!validateForm()) {
+      toast.error("Please fill in all required fields, babe! 💖");
       return;
     }
     try {
-      formData.subjects = null
+      setIsSubmitting(true);
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/classes/${params.id}`,
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ ...formData,   }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...formData, subjects: selectedSubjects }),
         }
       );
       const data = await res.json();
       if (data.success) {
-        toast.success("Primary class updated successfully");
+        toast.success("Class updated perfectly, my love! 🌟");
         router.push("/admin/courses/primary");
       }
     } catch (error) {
-      toast.error("Failed to update class. Please try again.");
+      toast.error("Oops, something went wrong, sweetheart. Try again! 💕");
       console.error("Submit error:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
-  const totalWeeklyHours = selectedSubjects?.reduce(
-    (total, subject) => total + subject.hours,
-    0
-  );
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading class data...</p>
+          <p className="text-muted-foreground">Loading your class data, angel... 💞</p>
         </div>
       </div>
     );
@@ -164,7 +175,6 @@ export default function EditPrimaryClass() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/admin/courses/primary">
           <Button variant="outline" size="sm">
@@ -179,12 +189,12 @@ export default function EditPrimaryClass() {
           </h1>
           <p className="text-muted-foreground">
             Update class information and subjects
+
           </p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
         <Card>
           <CardHeader>
             <CardTitle>Basic Information</CardTitle>
@@ -200,67 +210,64 @@ export default function EditPrimaryClass() {
                   value={formData.grade}
                   onChange={handleInputChange}
                   required
+                  className={errors.grade ? "border-red-500" : ""}
                 />
+                {errors.grade && <p className="text-sm text-red-600 mt-1">{errors.grade}</p>}
               </div>
               <div>
-                <Label htmlFor="nepaliName">Nepali Name *</Label>
+                <Label htmlFor="fullName">Full Name *</Label>
                 <Input
-                  id="nepaliName"
-                  name="nepaliName"
-                  placeholder="e.g., कक्षा १"
-                  value={formData.nepaliName}
+                  id="fullName"
+                  name="fullName"
+                  placeholder="e.g., Class One"
+                  value={formData.fullName}
                   onChange={handleInputChange}
                   required
+                  className={errors.fullName ? "border-red-500" : ""}
                 />
+                {errors.fullName && <p className="text-sm text-red-600 mt-1">{errors.fullName}</p>}
               </div>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="students">Number of Students</Label>
-                <Input
-                  id="students"
-                  name="students"
-                  type="number"
-                  placeholder="45"
-                  value={formData.students}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div>
-                <Label htmlFor="sections">Number of Sections</Label>
-                <Input
-                  id="sections"
-                  name="sections"
-                  type="number"
-                  placeholder="1"
-                  value={formData.sections}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div>
-                <Label htmlFor="ageGroup">Age Group</Label>
+                <Label htmlFor="ageGroup">Age Group *</Label>
                 <Input
                   id="ageGroup"
                   name="ageGroup"
                   placeholder="e.g., 5-6 years"
                   value={formData.ageGroup}
                   onChange={handleInputChange}
+                  className={errors.ageGroup ? "border-red-500" : ""}
                 />
+                {errors.ageGroup && <p className="text-sm text-red-600 mt-1">{errors.ageGroup}</p>}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="sections">Number of Sections</Label>
+                  <Input
+                    id="sections"
+                    name="sections"
+                    type="number"
+                    placeholder="1"
+                    value={formData.sections}
+                    onChange={handleInputChange}
+                    className={errors.sections ? "border-red-500" : ""}
+                  />
+                  {errors.sections && <p className="text-sm text-red-600 mt-1">{errors.sections}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="weeklyHours">Weekly Hours</Label>
+                  <Input
+                    id="weeklyHours"
+                    name="weelyHours"
+                    type="number"
+                    placeholder="30"
+                    value={formData.weeklyHours}
+                    onChange={handleInputChange}
+                  />
+                </div>
               </div>
             </div>
-
-            <div>
-              <Label htmlFor="curriculum">Curriculum Type</Label>
-              <Input
-                id="curriculum"
-                name="curriculum"
-                placeholder="e.g., Basic Foundation"
-                value={formData.curriculum}
-                onChange={handleInputChange}
-              />
-            </div>
-
             <div>
               <Label htmlFor="description">Description</Label>
               <Textarea
@@ -275,37 +282,39 @@ export default function EditPrimaryClass() {
           </CardContent>
         </Card>
 
-        {/* Subject Selection */}
         <Card>
-          <CardHeader>
-            <CardTitle>Subject Management</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Update subjects for this class. Mandatory subjects cannot be
-              removed.
-            </p>
+          <CardHeader className="flex items-center justify-between">
+            <div>
+              <CardTitle>Subject Selection</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Pick the perfect subjects for this class, my love! 🌸 Mandatory ones are pre-selected.
+              </p>
+              {errors.subjects && <p className="text-sm text-red-600">{errors.subjects}</p>}
+            </div>
+            <Link href="/admin/courses/subjects/primary/add">
+              <Button type="button" className="flex items-center gap-2">
+                <Plus className="w-4 h-4" /> Add New Subject
+              </Button>
+            </Link>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Available Subjects */}
             <div>
-              <Label className="text-base font-medium">
-                Available Subjects
-              </Label>
+              <Label className="text-base font-medium">Available Subjects</Label>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
-                {availableSubjects?.map((subject) => {
-                  const isSelected = selectedSubjects?.find(
-                    (s) => s.code === subject.code
-                  );
+                {availableSubjects.map((subject) => {
                   return (
                     <div
                       key={subject.code}
                       className="flex items-center space-x-2 p-3 border rounded-lg"
                     >
+
                       <Checkbox
                         id={subject.code}
-                        checked={isSelected}
+                        checked={subject.mandatory}
                         onCheckedChange={() => handleSubjectToggle(subject)}
-                        disabled={subject.mandatory}
                       />
+
+
                       <div className="flex-1">
                         <Label htmlFor={subject.code} className="font-medium">
                           {subject.name}
@@ -329,39 +338,15 @@ export default function EditPrimaryClass() {
                 })}
               </div>
             </div>
-
-            {/* Add Custom Subject */}
-            <div>
-              <Label className="text-base font-medium">
-                Add Custom Subject
-              </Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  placeholder="Enter subject name"
-                  value={customSubject}
-                  onChange={(e) => setCustomSubject(e.target.value)}
-                />
-                <Button type="button" onClick={addCustomSubject}>
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Selected Subjects */}
-            {selectedSubjects?.length > 0 && (
+            {selectedSubjects.length > 0 && (
               <div>
                 <Label className="text-base font-medium">
-                  Current Subjects ({selectedSubjects.length})
+                  Selected Subjects ({selectedSubjects.length})
                 </Label>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {selectedSubjects.map((subject) => (
-                    <Badge
-                      key={subject.code}
-                      variant="outline"
-                      className="flex items-center gap-1"
-                    >
+                    <Badge key={subject.code} variant="outline" className="flex items-center gap-1">
                       {subject.name}
-                      <span className="text-xs">({subject.hours}h)</span>
                       {!subject.mandatory && (
                         <button
                           type="button"
@@ -374,26 +359,17 @@ export default function EditPrimaryClass() {
                     </Badge>
                   ))}
                 </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Total Weekly Hours: {totalWeeklyHours} hours
-                </p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Summary */}
         <Card>
           <CardHeader>
-            <CardTitle>Updated Class Summary</CardTitle>
+            <CardTitle>Class Summary</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-muted/50 rounded-lg">
-                <Users className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-                <p className="text-2xl font-bold">{formData.students || "0"}</p>
-                <p className="text-sm text-muted-foreground">Students</p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <School className="w-6 h-6 mx-auto mb-2 text-green-600" />
                 <p className="text-2xl font-bold">{formData.sections || "1"}</p>
@@ -401,26 +377,36 @@ export default function EditPrimaryClass() {
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <BookOpen className="w-6 h-6 mx-auto mb-2 text-purple-600" />
-                <p className="text-2xl font-bold">{selectedSubjects?.length}</p>
+                <p className="text-2xl font-bold">{selectedSubjects.length}</p>
                 <p className="text-sm text-muted-foreground">Subjects</p>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <Clock className="w-6 h-6 mx-auto mb-2 text-orange-600" />
-                <p className="text-2xl font-bold">{totalWeeklyHours}</p>
+                <p className="text-2xl font-bold">{formData.weeklyHours || "0"}</p>
                 <p className="text-sm text-muted-foreground">Hours/Week</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Actions */}
         <div className="flex justify-end gap-4">
           <Link href="/admin/courses/primary">
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline" disabled={isSubmitting}>
+              Cancel
+            </Button>
           </Link>
-          <Button type="submit" className="flex items-center gap-2">
-            <Save className="w-4 h-4" />
-            Update Class
+          <Button type="submit" className="flex items-center gap-2" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Updating Class...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Update Class
+              </>
+            )}
           </Button>
         </div>
       </form>

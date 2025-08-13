@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+
 const primarySubjectSchema = new Schema(
   {
     name: {
@@ -7,7 +8,8 @@ const primarySubjectSchema = new Schema(
     },
     code: {
       type: String,
-      required: true
+      required: true,
+      unique: true
     },
     type: {
       type: String,
@@ -15,7 +17,8 @@ const primarySubjectSchema = new Schema(
     },
     mandatory: {
       type: Boolean,
-      required: true
+      required: true,
+      default: false
     },
     description: {
       type: String,
@@ -23,7 +26,8 @@ const primarySubjectSchema = new Schema(
     },
     status: {
       type: String,
-      required: true
+      required: true,
+      default: 'active'
     },
     objectives: [String],
     subjectLevel: {

@@ -61,22 +61,18 @@ export default function AddPrimaryClass() {
   useEffect(() => {
     getAviableSubjects();
   }, []);
+  // Subject toggle to add/remove subject IDs
   const handleSubjectToggle = (subject) => {
     setSelectedSubjects((prev) => {
       const exists = prev.find((s) => s._id === subject._id);
-
       if (exists) {
-        // Toggle by creating a new array with updated object
         return prev.map((s) =>
           s._id === subject._id ? { ...s, mandatory: !s.mandatory } : s
         );
       } else {
-        // Add new subject as is
         return [...prev, { ...subject }];
       }
     });
-
-    // Also update availableSubjects to reflect the change
     setAvailableSubjects((prev) =>
       prev.map((s) =>
         s._id === subject._id ? { ...s, mandatory: !s.mandatory } : s
@@ -131,10 +127,8 @@ export default function AddPrimaryClass() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       if (!validateForm()) {
         toast.error("Please fill in all required fields");
@@ -147,7 +141,7 @@ export default function AddPrimaryClass() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({ ...formData, subjects: selectedSubjects }),
         }
       );
       setIsSubmitting(true);
@@ -156,7 +150,6 @@ export default function AddPrimaryClass() {
         toast.success("Primary class added successfully");
         router.push("/admin/courses/primary");
       }
-
     } catch (error) {
       toast.error("Failed to add class. Please try again.");
       console.error("Submit error:", error);
@@ -330,22 +323,13 @@ export default function AddPrimaryClass() {
                       key={subject.code}
                       className="flex items-center space-x-2 p-3 border rounded-lg"
                     >
-                      {
-                        subject.mandatory ? (
-                          <Checkbox
-                            id={subject.code}
-                            checked={subject.mandatory}
-                            onCheckedChange={() => handleSubjectToggle(subject)}
-                          />
-                        ) : (
-                          <Checkbox
-                            id={subject.code}
-                            checked={subject.mandatory}
-                            onCheckedChange={() => handleSubjectToggle(subject)}
 
-                          />
-                        )
-                      }
+                      <Checkbox
+                        id={subject.code}
+                        checked={subject.mandatory}
+                        onCheckedChange={() => handleSubjectToggle(subject)}
+                      />
+
 
                       <div className="flex-1">
                         <Label htmlFor={subject.code} className="font-medium">

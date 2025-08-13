@@ -183,7 +183,7 @@ export default function PrimaryLevel() {
                 <BookOpen className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">8</p>
+                <p className="text-2xl font-bold">{coreSubjects.length}</p>
                 <p className="text-sm text-muted-foreground">Core Subjects</p>
               </div>
             </div>
@@ -395,7 +395,7 @@ export default function PrimaryLevel() {
                           variant="secondary"
                           className="text-xs"
                         >
-                          {subject}
+                          {subject.name}
                         </Badge>
                       ))}
                       {cls.subjects?.length > 4 && (
