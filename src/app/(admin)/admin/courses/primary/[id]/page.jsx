@@ -40,6 +40,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import da from "zod/v4/locales/da.cjs";
+import TeacherTab from "./TeacherTab";
 
 export default function PrimaryClassDetails() {
   const params = useParams();
@@ -235,50 +236,8 @@ export default function PrimaryClassDetails() {
   const getClassData = async () => {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/classes/${params.id}`)
     const data = await res.json()
-    data.data.subjects = [
-      {
-        name: "Nepali",
-        code: "NEP",
-        mandatory: true,
-        hours: 6,
-        teacher: "Mrs. Sita Sharma",
-      },
-      {
-        name: "English",
-        code: "ENG",
-        mandatory: true,
-        hours: 5,
-        teacher: "Mr. John Smith",
-      },
-      {
-        name: "Mathematics",
-        code: "MATH",
-        mandatory: true,
-        hours: 6,
-        teacher: "Mrs. Kamala Devi",
-      },
-      {
-        name: "Science",
-        code: "SCI",
-        mandatory: true,
-        hours: 4,
-        teacher: "Mr. Ram Prasad",
-      },
-      {
-        name: "Social Studies",
-        code: "SS",
-        mandatory: true,
-        hours: 4,
-        teacher: "Mrs. Gita Poudel",
-      },
-      {
-        name: "Health & Physical Education",
-        code: "HPE",
-        mandatory: true,
-        hours: 3,
-        teacher: "Mr. Bikash Thapa",
-      },
-    ],
+    setClassData(data.data)
+    setLoading(false)
     data.data.statistics = {
       totalStudents: 45,
       maleStudents: 23,
@@ -456,10 +415,10 @@ export default function PrimaryClassDetails() {
               {classData.grade} Management
             </h1>
             <p className="text-muted-foreground">
-              {classData.nepaliName} • {classData.curriculum} • {classData.ageGroup}
+              {classData.fullName} • {classData.ageGroup}
             </p>
             <p className="text-sm text-muted-foreground mt-1">
-              {classData.description}
+              {classData.description.slice(0, 70)}...
             </p>
           </div>
         </div>
@@ -491,7 +450,7 @@ export default function PrimaryClassDetails() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-blue-600">{classData.students}</p>
+                <p className="text-2xl font-bold text-blue-600">{classData.students.length}</p>
                 <p className="text-sm text-muted-foreground">Total Students</p>
                 <div className="flex items-center gap-1 mt-1">
                   <TrendingUp className="w-3 h-3 text-green-600" />
@@ -646,21 +605,13 @@ export default function PrimaryClassDetails() {
                     <p className="font-semibold text-lg">{classData.grade}</p>
                   </div>
                   <div className="p-3 bg-muted/50 rounded-lg">
-                    <Label className="text-sm font-medium text-muted-foreground">Nepali Name</Label>
-                    <p className="font-semibold text-lg">{classData.nepaliName}</p>
-                  </div>
-                  <div className="p-3 bg-muted/50 rounded-lg">
                     <Label className="text-sm font-medium text-muted-foreground">Age Group</Label>
                     <p className="font-medium">{classData.ageGroup}</p>
                   </div>
-                  <div className="p-3 bg-muted/50 rounded-lg">
-                    <Label className="text-sm font-medium text-muted-foreground">Curriculum</Label>
-                    <p className="font-medium">{classData.curriculum}</p>
-                  </div>
                 </div>
-                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <Label className="text-sm font-medium text-blue-800">Description</Label>
-                  <p className="mt-1 text-blue-700">{classData.description}</p>
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <Label className="text-sm font-medium text-white">Description</Label>
+                  <p className="mt-1 text-muted-foreground">{classData.description.slice(0, 100) + '...'} </p>
                 </div>
               </CardContent>
             </Card>
@@ -674,18 +625,18 @@ export default function PrimaryClassDetails() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-                    <p className="text-3xl font-bold text-green-600">{classData.statistics.totalStudents}</p>
+                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <p className="text-3xl font-bold text-green-600">{classData.students.length}</p>
                     <p className="text-sm text-green-700">Total Enrolled</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="text-center p-3 bg-blue-50 rounded-lg">
-                      <p className="text-xl font-bold text-blue-600">{classData.statistics.maleStudents}</p>
+                    <div className="text-center p-3 bg-muted/50 rounded-lg">
+                      <p className="text-xl font-bold text-blue-600">{classData.students.filter(student => student.gender === 'male').length}</p>
                       <p className="text-xs text-blue-700">Male</p>
                     </div>
-                    <div className="text-center p-3 bg-pink-50 rounded-lg">
-                      <p className="text-xl font-bold text-pink-600">{classData.statistics.femaleStudents}</p>
+                    <div className="text-center p-3 bg-muted/50 rounded-lg">
+                      <p className="text-xl font-bold text-pink-600">{classData.students.filter(student => student.gender === 'female').length}</p>
                       <p className="text-xs text-pink-700">Female</p>
                     </div>
                   </div>
@@ -693,18 +644,18 @@ export default function PrimaryClassDetails() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center p-2 bg-muted/50 rounded">
                       <span className="text-sm text-muted-foreground">Average Age</span>
-                      <Badge variant="outline">{classData.statistics.averageAge} years</Badge>
+                      <Badge variant="outline">{(classData.students.reduce((total, student) => total + student.age, 0) / classData.students.length) || 0} years</Badge>
                     </div>
                     <div className="flex justify-between items-center p-2 bg-muted/50 rounded">
                       <span className="text-sm text-muted-foreground">Attendance Rate</span>
                       <Badge variant="secondary" className="bg-green-100 text-green-800">
-                        {classData.statistics.attendanceRate}%
+                        {((classData.students.reduce((total, student) => total + student.attendance, 0) / classData.students.length) || 0) * 100}%
                       </Badge>
                     </div>
                     <div className="flex justify-between items-center p-2 bg-muted/50 rounded">
                       <span className="text-sm text-muted-foreground">Pass Rate</span>
                       <Badge variant="default" className="bg-blue-600">
-                        {classData.statistics.passRate}%
+                        {((classData.students.reduce((total, student) => total + student.grade, 0) / classData.students.length) || 0) * 100}%
                       </Badge>
                     </div>
                   </div>
@@ -721,8 +672,8 @@ export default function PrimaryClassDetails() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border">
-                    <div className="flex items-center justify-between mb-2">
+                  <div className="p-4 bg-muted/50 rounded-lg  shadow">
+                    <div className="flex items-center justify-between mb-2 ">
                       <span className="text-sm font-medium">Overall Performance</span>
                       <Badge variant="default" className="bg-purple-600">Excellent</Badge>
                     </div>
@@ -733,7 +684,7 @@ export default function PrimaryClassDetails() {
                   </div>
 
                   <div className="grid grid-cols-1 gap-3">
-                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg  shadow">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-green-600" />
                         <span className="text-sm font-medium">Active Students</span>
@@ -741,7 +692,7 @@ export default function PrimaryClassDetails() {
                       <span className="font-bold text-green-600">{classData.statistics.totalStudents}</span>
                     </div>
 
-                    <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg  shadow">
                       <div className="flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-orange-600" />
                         <span className="text-sm font-medium">Needs Attention</span>
@@ -749,7 +700,7 @@ export default function PrimaryClassDetails() {
                       <span className="font-bold text-orange-600">2</span>
                     </div>
 
-                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg  shadow">
                       <div className="flex items-center gap-2">
                         <Award className="w-4 h-4 text-blue-600" />
                         <span className="text-sm font-medium">Top Performers</span>
@@ -804,7 +755,7 @@ export default function PrimaryClassDetails() {
             <Card>
               <CardContent className="p-4 text-center">
                 <Clock className="w-6 h-6 mx-auto mb-2 text-purple-600" />
-                <p className="text-2xl font-bold">{classData.subjects.reduce((total, s) => total + s.hours, 0)}</p>
+                <p className="text-2xl font-bold">{10}</p>
                 <p className="text-sm text-muted-foreground">Total Hours</p>
               </CardContent>
             </Card>
@@ -838,11 +789,28 @@ export default function PrimaryClassDetails() {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
                       <span className="text-sm text-muted-foreground">Weekly Hours</span>
-                      <Badge variant="outline">{subject.hours}h</Badge>
+                      <Badge variant="outline">{subject.weeklyHours || 0} h</Badge>
                     </div>
-                    <div className="flex items-center gap-2 p-2 bg-blue-50 rounded">
-                      <User className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-800">{subject.teacher}</span>
+                    <div className="flex items-center gap-2 p-2  bg-muted/50 rounded">
+                      {
+                        subject.teacher ? (
+                          <>
+                            <User className="w-4 h-4  " />
+                            <span className="text-sm font-medium ">{subject.teacher}</span>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-2 bg-muted/50 rounded justify-between w-full">
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4 " />
+                              <span className="text-sm font-medium ">Not Assigned</span>
+                            </div>
+                            <Button variant="default" size="sm" className=" ">
+                              <Edit className="w-3 h-3 mr-1" />
+                              Assign Teacher
+                            </Button>
+                          </div>
+                        )
+                      }
                     </div>
                   </div>
 
@@ -866,7 +834,7 @@ export default function PrimaryClassDetails() {
         </TabsContent>
 
         <TabsContent value="teachers" className="space-y-6">
-          <TeacherManager classData={classData} />
+          <TeacherTab classData={classData} />
         </TabsContent>
 
         <TabsContent value="schedule" className="space-y-6">
@@ -1282,405 +1250,3 @@ function ScheduleManager({ classData }) {
 }
 
 // Teacher Manager Component
-function TeacherManager({ classData }) {
-  const [teacherAssignments, setTeacherAssignments] = useState({});
-  const [availableTeachers, setAvailableTeachers] = useState([]);
-  const [showAssignDialog, setShowAssignDialog] = useState(false);
-  const [selectedSubject, setSelectedSubject] = useState("");
-
-  // Mock available teachers data
-  const mockTeachers = [
-    {
-      id: 1,
-      name: "Mrs. Sita Sharma",
-      qualification: "M.A. Nepali",
-      experience: "8 years",
-      specializations: ["Nepali", "Literature"],
-      email: "sita.sharma@school.edu",
-      phone: "+977-9841234567"
-    },
-    {
-      id: 2,
-      name: "Mr. John Smith",
-      qualification: "M.A. English",
-      experience: "6 years",
-      specializations: ["English", "Communication"],
-      email: "john.smith@school.edu",
-      phone: "+977-9841234568"
-    },
-    {
-      id: 3,
-      name: "Dr. Ram Prasad",
-      qualification: "M.Sc. Mathematics",
-      experience: "12 years",
-      specializations: ["Mathematics", "Physics"],
-      email: "ram.prasad@school.edu",
-      phone: "+977-9841234569"
-    },
-    {
-      id: 4,
-      name: "Ms. Lisa Johnson",
-      qualification: "M.Sc. Science",
-      experience: "5 years",
-      specializations: ["Science", "Biology", "Chemistry"],
-      email: "lisa.johnson@school.edu",
-      phone: "+977-9841234570"
-    },
-    {
-      id: 5,
-      name: "Mr. Hari Bahadur",
-      qualification: "M.A. Social Studies",
-      experience: "10 years",
-      specializations: ["Social Studies", "History", "Geography"],
-      email: "hari.bahadur@school.edu",
-      phone: "+977-9841234571"
-    }
-  ];
-
-  // Available subjects for this class
-  const availableSubjects = [
-    "Nepali", "English", "Mathematics", "Science", "Social Studies",
-    "Health & Physical Education", "Computer", "Art", "Music", "Moral Education"
-  ];
-
-  // Initialize teacher assignments
-  useEffect(() => {
-    const initialAssignments = {};
-    classData.teachers.forEach((teacher) => {
-      initialAssignments[teacher.subject] = {
-        teacherId: teacher.id || Math.floor(Math.random() * 1000),
-        teacherName: teacher.name,
-        qualification: teacher.qualification,
-        experience: teacher.experience
-      };
-    });
-    setTeacherAssignments(initialAssignments);
-    setAvailableTeachers(mockTeachers);
-  }, [classData]);
-
-  const assignTeacher = (subject, teacher) => {
-    setTeacherAssignments(prev => ({
-      ...prev,
-      [subject]: {
-        teacherId: teacher.id,
-        teacherName: teacher.name,
-        qualification: teacher.qualification,
-        experience: teacher.experience,
-        email: teacher.email,
-        phone: teacher.phone,
-        specializations: teacher.specializations
-      }
-    }));
-    toast.success(`${teacher.name} assigned to ${subject}`);
-  };
-
-  const removeTeacher = (subject) => {
-    setTeacherAssignments(prev => {
-      const updated = { ...prev };
-      delete updated[subject];
-      return updated;
-    });
-    toast.success(`Teacher removed from ${subject}`);
-  };
-
-  const getTeacherWorkload = (teacherId) => {
-    return Object.values(teacherAssignments).filter(
-      assignment => assignment.teacherId === teacherId
-    ).length;
-  };
-
-  const isTeacherQualified = (teacher, subject) => {
-    return teacher.specializations.some(spec =>
-      spec.toLowerCase().includes(subject.toLowerCase()) ||
-      subject.toLowerCase().includes(spec.toLowerCase())
-    );
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Teacher Management</h3>
-          <p className="text-sm text-muted-foreground">
-            Assign teachers to subjects for {classData.grade} ({classData.nepaliName})
-          </p>
-        </div>
-        <Button onClick={() => setShowAssignDialog(true)} className="flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Assign Teacher
-        </Button>
-      </div>
-
-      {/* Teacher Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <User className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-            <p className="text-2xl font-bold">{Object.keys(teacherAssignments).length}</p>
-            <p className="text-sm text-muted-foreground">Assigned Subjects</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <Users className="w-6 h-6 mx-auto mb-2 text-green-600" />
-            <p className="text-2xl font-bold">{new Set(Object.values(teacherAssignments).map(a => a.teacherId)).size}</p>
-            <p className="text-sm text-muted-foreground">Active Teachers</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <BookOpen className="w-6 h-6 mx-auto mb-2 text-orange-600" />
-            <p className="text-2xl font-bold">{availableSubjects.length - Object.keys(teacherAssignments).length}</p>
-            <p className="text-sm text-muted-foreground">Unassigned Subjects</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <Target className="w-6 h-6 mx-auto mb-2 text-purple-600" />
-            <p className="text-2xl font-bold">{Math.round((Object.keys(teacherAssignments).length / availableSubjects.length) * 100)}%</p>
-            <p className="text-sm text-muted-foreground">Coverage</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Subject-Teacher Assignment Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Subject Assignments</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="border p-3 bg-muted font-medium text-left">Subject</th>
-                  <th className="border p-3 bg-muted font-medium text-left">Assigned Teacher</th>
-                  <th className="border p-3 bg-muted font-medium text-left">Qualification</th>
-                  <th className="border p-3 bg-muted font-medium text-left">Experience</th>
-                  <th className="border p-3 bg-muted font-medium text-center">Status</th>
-                  <th className="border p-3 bg-muted font-medium text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {availableSubjects.map((subject) => {
-                  const assignment = teacherAssignments[subject];
-                  return (
-                    <tr key={subject}>
-                      <td className="border p-3 font-medium">{subject}</td>
-                      <td className="border p-3">
-                        {assignment ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                              <User className="w-4 h-4 text-blue-600" />
-                            </div>
-                            <div>
-                              <p className="font-medium">{assignment.teacherName}</p>
-                              {assignment.email && (
-                                <p className="text-xs text-muted-foreground">{assignment.email}</p>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">Not assigned</span>
-                        )}
-                      </td>
-                      <td className="border p-3">
-                        {assignment ? assignment.qualification : "-"}
-                      </td>
-                      <td className="border p-3">
-                        {assignment ? assignment.experience : "-"}
-                      </td>
-                      <td className="border p-3 text-center">
-                        {assignment ? (
-                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                            Assigned
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">
-                            Vacant
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="border p-3 text-center">
-                        <div className="flex gap-1 justify-center">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedSubject(subject);
-                              setShowAssignDialog(true);
-                            }}
-                            className="h-8 px-2"
-                          >
-                            {assignment ? <Edit className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-                          </Button>
-                          {assignment && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => removeTeacher(subject)}
-                              className="h-8 px-2 text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Available Teachers */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Available Teachers</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {availableTeachers.map((teacher) => {
-              const workload = getTeacherWorkload(teacher.id);
-              return (
-                <Card key={teacher.id} className="border-2 hover:border-blue-200 transition-colors">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium">{teacher.name}</h4>
-                        <p className="text-sm text-muted-foreground">{teacher.qualification}</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Experience:</span>
-                        <span>{teacher.experience}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Workload:</span>
-                        <Badge variant={workload > 3 ? "destructive" : workload > 1 ? "secondary" : "outline"}>
-                          {workload} subjects
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="mt-3">
-                      <p className="text-xs text-muted-foreground mb-1">Specializations:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {teacher.specializations.map((spec) => (
-                          <Badge key={spec} variant="outline" className="text-xs">
-                            {spec}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="mt-3 space-y-1 text-xs text-muted-foreground">
-                      <p>📧 {teacher.email}</p>
-                      <p>📞 {teacher.phone}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Assignment Dialog */}
-      {showAssignDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
-            <CardHeader>
-              <CardTitle>
-                {selectedSubject ? `Assign Teacher to ${selectedSubject}` : "Assign Teacher"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!selectedSubject && (
-                <div>
-                  <label className="text-sm font-medium">Select Subject</label>
-                  <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableSubjects.map((subject) => (
-                        <SelectItem key={subject} value={subject}>
-                          {subject}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div>
-                <label className="text-sm font-medium">Available Teachers</label>
-                <div className="mt-2 space-y-2 max-h-60 overflow-y-auto">
-                  {availableTeachers
-                    .filter(teacher => selectedSubject ? isTeacherQualified(teacher, selectedSubject) : true)
-                    .map((teacher) => (
-                      <div
-                        key={teacher.id}
-                        className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                        onClick={() => {
-                          if (selectedSubject) {
-                            assignTeacher(selectedSubject, teacher);
-                            setShowAssignDialog(false);
-                            setSelectedSubject("");
-                          }
-                        }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <User className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium">{teacher.name}</p>
-                            <p className="text-sm text-muted-foreground">{teacher.qualification}</p>
-                            <div className="flex gap-1 mt-1">
-                              {teacher.specializations.map((spec) => (
-                                <Badge key={spec} variant="outline" className="text-xs">
-                                  {spec}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                          {selectedSubject && isTeacherQualified(teacher, selectedSubject) && (
-                            <Badge className="bg-green-100 text-green-800">
-                              Qualified
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowAssignDialog(false);
-                    setSelectedSubject("");
-                  }}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
-  );
-}

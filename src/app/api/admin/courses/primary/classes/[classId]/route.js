@@ -1,9 +1,15 @@
 import PrimaryClassModel from "@/models/admin/course/primary/primaryLevelClass.model";
+import "@/models"; // Import models to ensure they're registered
 
 export async function GET(request, { params }) {
   try {
     const classId = params.classId;
-    const classData = await PrimaryClassModel.findOne({ _id: classId }).lean();
+    const classData = await PrimaryClassModel.findOne({ _id: classId })
+    .populate({
+      path: 'subjects',
+      model: 'PrimarySubject', 
+    })
+    .lean();
     return Response.json({
       message: "Primary class retrieved successfully",
       success: true,
