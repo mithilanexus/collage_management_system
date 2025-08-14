@@ -1,4 +1,4 @@
-import PrimaryLevelTeacherModel from "@/models/admin/management/teacher/primaryLevel/primaryLevel.model";
+import PrimaryLevelTeacherModel from "@/models/admin/management/teacher/primaryLevel/primaryLevelTeacher.model";
 
 export async function GET() {
     try {

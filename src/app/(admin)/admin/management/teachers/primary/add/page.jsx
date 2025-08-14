@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { 
+import {
   ArrowLeft,
   Save,
   Upload,
@@ -22,12 +22,14 @@ import {
   DollarSign
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function AddPrimaryTeacher() {
   const [formData, setFormData] = useState({
     // Personal Information
     nepaliName: "",
-    englishName: "",
+    name: "",
     email: "",
     phone: "",
     alternatePhone: "",
@@ -35,7 +37,7 @@ export default function AddPrimaryTeacher() {
     dateOfBirth: "",
     gender: "",
     citizenshipNumber: "",
-    
+
     // Professional Information
     qualification: "",
     specialization: "",
@@ -43,23 +45,24 @@ export default function AddPrimaryTeacher() {
     previousSchool: "",
     joinDate: "",
     employeeId: "",
-    
+
     // Teaching Details
     subjects: [],
     classes: [],
-    
+
     // Salary Information
     basicSalary: "",
     allowances: "",
-    
+
     // Additional Information
     emergencyContact: "",
     emergencyPhone: "",
     notes: ""
   });
+  const router = useRouter()
 
   const availableSubjects = [
-    "Nepali", "English", "Mathematics", "Science", "Social Studies", 
+    "Nepali", "English", "Mathematics", "Science", "Social Studies",
     "Health & Physical Education", "Art", "Computer"
   ];
 
@@ -77,7 +80,7 @@ export default function AddPrimaryTeacher() {
   const handleSubjectChange = (subject, checked) => {
     setFormData(prev => ({
       ...prev,
-      subjects: checked 
+      subjects: checked
         ? [...prev.subjects, subject]
         : prev.subjects.filter(s => s !== subject)
     }));
@@ -86,16 +89,33 @@ export default function AddPrimaryTeacher() {
   const handleClassChange = (cls, checked) => {
     setFormData(prev => ({
       ...prev,
-      classes: checked 
+      classes: checked
         ? [...prev.classes, cls]
         : prev.classes.filter(c => c !== cls)
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    // Handle form submission here
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teachers/primary`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+      if (data.success) {
+        console.log("Teacher added successfully:", data);
+        toast.success("Teacher added successfully");
+        router.push("/admin/management/teachers/primary");
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   return (
@@ -141,12 +161,12 @@ export default function AddPrimaryTeacher() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="englishName">Full Name (English) *</Label>
+                <Label htmlFor="name">Full Name (English) *</Label>
                 <Input
-                  id="englishName"
+                  id="name"
                   placeholder="Full Name in English"
-                  value={formData.englishName}
-                  onChange={(e) => handleInputChange("englishName", e.target.value)}
+                  value={formData.name}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
                   required
                 />
               </div>

@@ -19,8 +19,10 @@ const primaryLevelTeacherSchema = new Schema(
         employeeId: { type: String, required: true },
 
         // Teaching Details
-        subjects: [{ type: Schema.Types.ObjectId, ref: "PrimarySubject" }],
-        classes: [{ type: Schema.Types.ObjectId, ref: "PrimaryClass" }],
+        // subjects: [{ type: Schema.Types.ObjectId, ref: "PrimarySubject" }],
+        subjects: [],
+        // classes: [{ type: Schema.Types.ObjectId, ref: "PrimaryClass" }],
+        classes: [],
 
         // Salary Information
         basicSalary: { type: Number, required: true },
