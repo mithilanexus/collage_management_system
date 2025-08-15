@@ -1,3 +1,5 @@
+import PrimaryLevelTeacherModel from "@/models/admin/management/teacher/primaryLevel/primaryLevelTeacher.model";
+
 export async function GET(request, context) {
     try {
         const teacherId = await context.params.teacherId;

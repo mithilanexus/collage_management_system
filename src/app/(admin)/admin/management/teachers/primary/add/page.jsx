@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +18,8 @@ import {
   Mail,
   MapPin,
   Calendar,
-  DollarSign
+  DollarSign,
+  Plus
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -60,15 +60,35 @@ export default function AddPrimaryTeacher() {
     notes: ""
   });
   const router = useRouter()
+  const [availableSubjects, setAvailableSubjects] = useState([]);
+  const [availableClasses, setAvailableClasses] = useState([]);
+  const [selectAllClasses, setSelectAllClasses] = useState(false);
 
-  const availableSubjects = [
-    "Nepali", "English", "Mathematics", "Science", "Social Studies",
-    "Health & Physical Education", "Art", "Computer"
-  ];
 
-  const availableClasses = [
-    "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5"
-  ];
+  const getAvailableSubjects = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/subjects/primary`);
+      const data = await response.json();
+      setAvailableSubjects(data.data);
+    } catch (error) {
+      console.error("Error fetching available subjects:", error);
+    }
+  }
+
+  const getAvailableClasses = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/classes`);
+      const data = await response.json();
+      setAvailableClasses(data.data);
+    } catch (error) {
+      console.error("Error fetching available classes:", error);
+    }
+  }
+
+  useEffect(() => {
+    getAvailableSubjects();
+    getAvailableClasses();
+  }, []);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -77,26 +97,32 @@ export default function AddPrimaryTeacher() {
     }));
   };
 
-  const handleSubjectChange = (subject, checked) => {
+  const handleSubjectChange = (subjectId, checked) => {
     setFormData(prev => ({
       ...prev,
       subjects: checked
-        ? [...prev.subjects, subject]
-        : prev.subjects.filter(s => s !== subject)
+        ? prev.subjects.includes(subjectId)
+          ? prev.subjects
+          : [...prev.subjects, subjectId]
+        : prev.subjects.filter(s => s !== subjectId)
     }));
   };
 
-  const handleClassChange = (cls, checked) => {
+  const handleClassChange = (classId, checked) => {
+    setSelectAllClasses(false);
     setFormData(prev => ({
       ...prev,
       classes: checked
-        ? [...prev.classes, cls]
-        : prev.classes.filter(c => c !== cls)
+        ? prev.classes.includes(classId)
+          ? prev.classes
+          : [...prev.classes, classId]
+        : prev.classes.filter(c => c !== classId)
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log(formData);
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teachers/primary`, {
         method: "POST",
@@ -117,7 +143,14 @@ export default function AddPrimaryTeacher() {
       toast.error(error.message);
     }
   };
-
+  const handleSelectAllClasses = (e) => {
+    e.preventDefault();
+    setFormData(prev => ({
+      ...prev,
+      classes: availableClasses.map(cls => cls._id)
+    }));
+    setSelectAllClasses(true);
+  };
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -149,17 +182,8 @@ export default function AddPrimaryTeacher() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="nepaliName">Full Name (Nepali) *</Label>
-                <Input
-                  id="nepaliName"
-                  placeholder="पूरा नाम नेपालीमा"
-                  value={formData.nepaliName}
-                  onChange={(e) => handleInputChange("nepaliName", e.target.value)}
-                  required
-                />
-              </div>
+            <div className="grid grid-cols-1   gap-4">
+
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name (English) *</Label>
                 <Input
@@ -362,32 +386,52 @@ export default function AddPrimaryTeacher() {
               <p className="text-sm text-muted-foreground mb-3">Select all subjects this teacher will handle</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {availableSubjects.map((subject) => (
-                  <div key={subject} className="flex items-center space-x-2">
+                  <div key={subject._id} className="flex items-center space-x-2">
                     <Checkbox
-                      id={`subject-${subject}`}
-                      checked={formData.subjects.includes(subject)}
-                      onCheckedChange={(checked) => handleSubjectChange(subject, checked)}
+                      id={`subject-${subject._id}`}
+                      checked={formData.subjects.includes(subject._id)}
+                      onCheckedChange={(checked) => handleSubjectChange(subject._id, checked)}
                     />
-                    <Label htmlFor={`subject-${subject}`} className="text-sm">{subject}</Label>
+                    <Label htmlFor={`subject-${subject._id}`} className="text-sm">{subject.name}</Label>
                   </div>
                 ))}
               </div>
             </div>
 
             <div>
-              <Label className="text-base font-medium">Classes to Teach *</Label>
-              <p className="text-sm text-muted-foreground mb-3">Select all classes this teacher will handle</p>
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+
+                  <Label className="text-base font-medium">Classes to Teach *</Label>
+                  <p className="text-sm text-muted-foreground mb-3">Select all classes this teacher will handle</p>
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mb-3"
+                    onClick={handleSelectAllClasses}
+                    disabled={selectAllClasses}
+                  >
+                    Select All Classes
+                  </Button>
+                </div>
+
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {availableClasses.map((cls) => (
-                  <div key={cls} className="flex items-center space-x-2">
+                  <div key={cls._id} className="flex items-center space-x-2">
                     <Checkbox
-                      id={`class-${cls}`}
-                      checked={formData.classes.includes(cls)}
-                      onCheckedChange={(checked) => handleClassChange(cls, checked)}
+                      id={`class-${cls._id}`}
+                      checked={formData.classes.includes(cls._id)}
+                      onCheckedChange={(checked) => handleClassChange(cls._id, checked)}
                     />
-                    <Label htmlFor={`class-${cls}`} className="text-sm">{cls}</Label>
+                    <Label htmlFor={`class-${cls._id}`} className="text-sm">{cls.fullName}</Label>
                   </div>
+
+
                 ))}
+
               </div>
             </div>
           </CardContent>

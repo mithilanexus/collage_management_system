@@ -1,11 +1,27 @@
-// This file ensures all models are loaded and registered with Mongoose
-import '@/models/admin/course/primary/primaryLevelClass.model';
-import '@/models/admin/course/subjects/primarySubject.model';
-import '@/models/admin/campus/resources.model'; 
-import '@/models/parent/Parent.model';
-import '@/models/student/Student.model';
-import '@/models/teacher/Teacher.model';
+// Import all models
+import Event from './admin/campus/events.model.js';
+import Facility from './admin/campus/facilities.model.js';
+import Resource from './admin/campus/resources.model.js';
+import Announcement from './admin/communications/announcements.model.js';
+import PrimaryLevelClass from './admin/course/primary/primaryLevelClass.model.js';
+import PrimarySubject from './admin/course/subjects/primarySubject.model.js';
+import Student from './admin/management/student/Student.model.js';
+import PrimaryLevelTeacher from './admin/management/teacher/primaryLevel/primaryLevelTeacher.model.js';
+import Parent from './parent/Parent.model.js';
+import Staff from './staff/Staff.model.js';
+import Teacher from './teacher/Teacher.model.js'; 
 
-// Add other model imports here as needed
-
-console.log('All models have been registered');
+//  
+export default {
+    Event,
+    Facility,
+    Resource,
+    Announcement,
+    PrimaryLevelClass,
+    PrimarySubject,
+    Student,
+    PrimaryLevelTeacher,
+    Parent,
+    Staff,
+    Teacher, 
+};

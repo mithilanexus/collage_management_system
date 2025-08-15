@@ -38,6 +38,13 @@ const primarySubjectSchema = new Schema(
   { timestamps: true }
 );
 
-const PrimarySubjectModel = mongoose.models.PrimarySubject || mongoose.model("PrimarySubject", primarySubjectSchema);
+// Check if the model is already defined
+let PrimarySubjectModel;
+
+if (mongoose.models.PrimarySubject) {
+  PrimarySubjectModel = mongoose.models.PrimarySubject;
+} else {
+  PrimarySubjectModel = mongoose.model("PrimarySubject", primarySubjectSchema);
+}
 
 export default PrimarySubjectModel;

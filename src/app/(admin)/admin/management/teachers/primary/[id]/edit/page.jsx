@@ -1,14 +1,13 @@
-
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { 
+import {
   ArrowLeft,
   Save,
   User,
@@ -21,52 +20,83 @@ import {
   DollarSign
 } from "lucide-react";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
 
-export default function EditPrimaryTeacher({ params }) {
-  // Mock data - in real app, fetch based on params.id
+export default function EditPrimaryTeacher() {
   const [formData, setFormData] = useState({
-    // Personal Information
-    nepaliName: "राम बहादुर श्रेष्ठ",
-    englishName: "Ram Bahadur Shrestha",
-    email: "ram.shrestha@school.edu.np",
-    phone: "+977-9841234567",
-    alternatePhone: "+977-9851234567",
-    address: "Kathmandu-15, Baneshwor",
-    dateOfBirth: "1985-03-15",
-    gender: "male",
-    citizenshipNumber: "12-34-56-78901",
-    
-    // Professional Information
-    qualification: "Bachelor in Education (B.Ed)",
-    specialization: "Primary Education",
-    experience: "8 years",
-    previousSchool: "Shree Saraswati Primary School",
-    joinDate: "2019-06-15",
-    employeeId: "EMP001",
-    
-    // Teaching Details
-    subjects: ["Nepali", "Social Studies"],
-    classes: ["Grade 3", "Grade 4"],
-    
-    // Salary Information
-    basicSalary: "45000",
-    allowances: "5000",
-    
-    // Additional Information
-    emergencyContact: "सीता श्रेष्ठ",
-    emergencyPhone: "+977-9871234567",
-    notes: "Excellent teacher with strong communication skills",
+    nepaliName: "",
+    name: "",
+    email: "",
+    phone: "",
+    alternatePhone: "",
+    address: "",
+    dateOfBirth: "",
+    gender: "",
+    citizenshipNumber: "",
+    qualification: "",
+    specialization: "",
+    experience: "",
+    previousSchool: "",
+    joinDate: "",
+    employeeId: "",
+    subjects: [],
+    classes: [],
+    basicSalary: "",
+    allowances: "",
+    emergencyContact: "",
+    emergencyPhone: "",
+    notes: "",
     status: "Active"
   });
+  const params = useParams();
+  const router = useRouter();
+  const [availableSubjects, setAvailableSubjects] = useState([]);
+  const [availableClasses, setAvailableClasses] = useState([]);
 
-  const availableSubjects = [
-    "Nepali", "English", "Mathematics", "Science", "Social Studies", 
-    "Health & Physical Education", "Art", "Computer"
-  ];
+  useEffect(() => {
+    const fetchTeacher = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teachers/primary/${params.id}`
+        );
+        const data = await res.json();
+        setFormData(data.data);
+      } catch (error) {
+        console.error("Error fetching teacher:", error);
+        toast.error("Failed to fetch teacher data");
+      }
+    };
+    fetchTeacher();
+  }, [params.id]);
 
-  const availableClasses = [
-    "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5"
-  ];
+  useEffect(() => {
+    const fetchAvailableSubjects = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/subjects/primary`
+        );
+        const data = await res.json();
+        setAvailableSubjects(data.data);
+      } catch (error) {
+        console.error("Error fetching available subjects:", error);
+      }
+    };
+    fetchAvailableSubjects();
+
+    const fetchAvailableClasses = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/classes`
+        );
+        const data = await res.json();
+        setAvailableClasses(data.data);
+      } catch (error) {
+        console.error("Error fetching available classes:", error);
+      }
+    };
+    fetchAvailableClasses();
+  }, []);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -75,33 +105,63 @@ export default function EditPrimaryTeacher({ params }) {
     }));
   };
 
-  const handleSubjectChange = (subject, checked) => {
+  const handleSubjectChange = (subjectId, checked) => {
     setFormData(prev => ({
       ...prev,
-      subjects: checked 
-        ? [...prev.subjects, subject]
-        : prev.subjects.filter(s => s !== subject)
+      subjects: checked
+        ? prev.subjects.includes(subjectId)
+          ? prev.subjects
+          : [...prev.subjects, subjectId]
+        : prev.subjects.filter(s => s !== subjectId)
     }));
   };
 
-  const handleClassChange = (cls, checked) => {
+  const handleClassChange = (classId, checked) => {
     setFormData(prev => ({
       ...prev,
-      classes: checked 
-        ? [...prev.classes, cls]
-        : prev.classes.filter(c => c !== cls)
+      classes: checked
+        ? prev.classes.includes(classId)
+          ? prev.classes
+          : [...prev.classes, classId]
+        : prev.classes.filter(c => c !== classId)
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSelectAllClasses = () => {
+    setFormData(prev => ({
+      ...prev,
+      classes: availableClasses.map(cls => cls._id)
+    }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Form updated:", formData);
-    // Handle form submission here
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teachers/primary/${params.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Teacher updated successfully");
+        router.push(`/admin/management/teachers/primary`);
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Link href={`/admin/management/teachers/primary/${params.id}`}>
           <Button variant="outline" size="sm">
@@ -115,13 +175,12 @@ export default function EditPrimaryTeacher({ params }) {
             Edit Teacher Profile
           </h1>
           <p className="text-muted-foreground">
-            Update {formData.englishName}'s information
+            Update {formData?.name || "Teacher"}'s information
           </p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Personal Information */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -130,29 +189,19 @@ export default function EditPrimaryTeacher({ params }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
+              
               <div className="space-y-2">
-                <Label htmlFor="nepaliName">Full Name (Nepali) *</Label>
+                <Label htmlFor="name">Full Name *</Label>
                 <Input
-                  id="nepaliName"
-                  placeholder="पूरा नाम नेपालीमा"
-                  value={formData.nepaliName}
-                  onChange={(e) => handleInputChange("nepaliName", e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="englishName">Full Name (English) *</Label>
-                <Input
-                  id="englishName"
+                  id="name"
                   placeholder="Full Name in English"
-                  value={formData.englishName}
-                  onChange={(e) => handleInputChange("englishName", e.target.value)}
+                  value={formData?.name || ""}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
                   required
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address *</Label>
@@ -163,7 +212,7 @@ export default function EditPrimaryTeacher({ params }) {
                     type="email"
                     placeholder="teacher@school.edu.np"
                     className="pl-10"
-                    value={formData.email}
+                    value={formData.email || ""}
                     onChange={(e) => handleInputChange("email", e.target.value)}
                     required
                   />
@@ -177,21 +226,20 @@ export default function EditPrimaryTeacher({ params }) {
                     id="phone"
                     placeholder="+977-98XXXXXXXX"
                     className="pl-10"
-                    value={formData.phone}
+                    value={formData.phone || ""}
                     onChange={(e) => handleInputChange("phone", e.target.value)}
                     required
                   />
                 </div>
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="alternatePhone">Alternate Phone</Label>
                 <Input
                   id="alternatePhone"
                   placeholder="+977-98XXXXXXXX"
-                  value={formData.alternatePhone}
+                  value={formData.alternatePhone || ""}
                   onChange={(e) => handleInputChange("alternatePhone", e.target.value)}
                 />
               </div>
@@ -200,12 +248,11 @@ export default function EditPrimaryTeacher({ params }) {
                 <Input
                   id="citizenshipNumber"
                   placeholder="XX-XX-XX-XXXXX"
-                  value={formData.citizenshipNumber}
+                  value={formData.citizenshipNumber || ""}
                   onChange={(e) => handleInputChange("citizenshipNumber", e.target.value)}
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="dateOfBirth">Date of Birth</Label>
@@ -215,7 +262,7 @@ export default function EditPrimaryTeacher({ params }) {
                     id="dateOfBirth"
                     type="date"
                     className="pl-10"
-                    value={formData.dateOfBirth}
+                    value={formData.dateOfBirth || ""}
                     onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
                   />
                 </div>
@@ -225,7 +272,7 @@ export default function EditPrimaryTeacher({ params }) {
                 <select
                   id="gender"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={formData.gender}
+                  value={formData.gender || ""}
                   onChange={(e) => handleInputChange("gender", e.target.value)}
                 >
                   <option value="">Select Gender</option>
@@ -235,7 +282,6 @@ export default function EditPrimaryTeacher({ params }) {
                 </select>
               </div>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="address">Address *</Label>
               <div className="relative">
@@ -244,7 +290,7 @@ export default function EditPrimaryTeacher({ params }) {
                   id="address"
                   placeholder="Full address with ward number"
                   className="pl-10"
-                  value={formData.address}
+                  value={formData.address || ""}
                   onChange={(e) => handleInputChange("address", e.target.value)}
                   required
                 />
@@ -252,8 +298,6 @@ export default function EditPrimaryTeacher({ params }) {
             </div>
           </CardContent>
         </Card>
-
-        {/* Professional Information */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -268,7 +312,7 @@ export default function EditPrimaryTeacher({ params }) {
                 <Input
                   id="qualification"
                   placeholder="e.g., Bachelor in Education (B.Ed)"
-                  value={formData.qualification}
+                  value={formData.qualification || ""}
                   onChange={(e) => handleInputChange("qualification", e.target.value)}
                   required
                 />
@@ -278,19 +322,18 @@ export default function EditPrimaryTeacher({ params }) {
                 <Input
                   id="specialization"
                   placeholder="e.g., Primary Education, Mathematics"
-                  value={formData.specialization}
+                  value={formData.specialization || ""}
                   onChange={(e) => handleInputChange("specialization", e.target.value)}
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="experience">Teaching Experience</Label>
                 <Input
                   id="experience"
                   placeholder="e.g., 5 years"
-                  value={formData.experience}
+                  value={formData.experience || ""}
                   onChange={(e) => handleInputChange("experience", e.target.value)}
                 />
               </div>
@@ -299,19 +342,18 @@ export default function EditPrimaryTeacher({ params }) {
                 <Input
                   id="previousSchool"
                   placeholder="Previous workplace"
-                  value={formData.previousSchool}
+                  value={formData.previousSchool || ""}
                   onChange={(e) => handleInputChange("previousSchool", e.target.value)}
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="joinDate">Joining Date *</Label>
                 <Input
                   id="joinDate"
                   type="date"
-                  value={formData.joinDate}
+                  value={formData.joinDate || ""}
                   onChange={(e) => handleInputChange("joinDate", e.target.value)}
                   required
                 />
@@ -320,8 +362,8 @@ export default function EditPrimaryTeacher({ params }) {
                 <Label htmlFor="employeeId">Employee ID</Label>
                 <Input
                   id="employeeId"
-                  placeholder="Employee ID"
-                  value={formData.employeeId}
+                  placeholder="Auto-generated or manual"
+                  value={formData.employeeId || ""}
                   onChange={(e) => handleInputChange("employeeId", e.target.value)}
                 />
               </div>
@@ -330,7 +372,7 @@ export default function EditPrimaryTeacher({ params }) {
                 <select
                   id="status"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={formData.status}
+                  value={formData.status || "Active"}
                   onChange={(e) => handleInputChange("status", e.target.value)}
                 >
                   <option value="Active">Active</option>
@@ -342,8 +384,6 @@ export default function EditPrimaryTeacher({ params }) {
             </div>
           </CardContent>
         </Card>
-
-        {/* Teaching Assignment */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -355,40 +395,53 @@ export default function EditPrimaryTeacher({ params }) {
             <div>
               <Label className="text-base font-medium">Subjects to Teach *</Label>
               <p className="text-sm text-muted-foreground mb-3">Select all subjects this teacher will handle</p>
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {availableSubjects.map((subject) => (
-                  <div key={subject} className="flex items-center space-x-2">
+                  <div key={subject._id} className="flex items-center space-x-2">
                     <Checkbox
-                      id={`subject-${subject}`}
-                      checked={formData.subjects.includes(subject)}
-                      onCheckedChange={(checked) => handleSubjectChange(subject, checked)}
+                      id={`subject-${subject._id}`}
+                      checked={formData.subjects.includes(subject._id)}
+                      onCheckedChange={(checked) => handleSubjectChange(subject._id, checked)}
                     />
-                    <Label htmlFor={`subject-${subject}`} className="text-sm">{subject}</Label>
+                    <Label htmlFor={`subject-${subject._id}`} className="text-sm">{subject.name}</Label>
                   </div>
                 ))}
               </div>
             </div>
-
             <div>
-              <Label className="text-base font-medium">Classes to Teach *</Label>
-              <p className="text-sm text-muted-foreground mb-3">Select all classes this teacher will handle</p>
+              <div className="flex items-center justify-between">
+
+                <div className="space-y-2">
+
+
+                  <Label className="text-base font-medium">Classes to Teach *</Label>
+                  <p className="text-sm text-muted-foreground mb-3">Select all classes this teacher will handle</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mb-3"
+                  onClick={handleSelectAllClasses}
+                >
+                  Select All Classes
+                </Button>
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {availableClasses.map((cls) => (
-                  <div key={cls} className="flex items-center space-x-2">
+                  <div key={cls._id} className="flex items-center space-x-2">
                     <Checkbox
-                      id={`class-${cls}`}
-                      checked={formData.classes.includes(cls)}
-                      onCheckedChange={(checked) => handleClassChange(cls, checked)}
+                      id={`class-${cls._id}`}
+                      checked={formData.classes.includes(cls._id)}
+                      onCheckedChange={(checked) => handleClassChange(cls._id, checked)}
                     />
-                    <Label htmlFor={`class-${cls}`} className="text-sm">{cls}</Label>
+                    <Label htmlFor={`class-${cls._id}`} className="text-sm">{cls.fullName}</Label>
                   </div>
                 ))}
               </div>
             </div>
           </CardContent>
         </Card>
-
-        {/* Salary Information */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -403,7 +456,7 @@ export default function EditPrimaryTeacher({ params }) {
                 <Input
                   id="basicSalary"
                   placeholder="e.g., 45000"
-                  value={formData.basicSalary}
+                  value={formData.basicSalary || ""}
                   onChange={(e) => handleInputChange("basicSalary", e.target.value)}
                   required
                 />
@@ -413,15 +466,13 @@ export default function EditPrimaryTeacher({ params }) {
                 <Input
                   id="allowances"
                   placeholder="e.g., 5000"
-                  value={formData.allowances}
+                  value={formData.allowances || ""}
                   onChange={(e) => handleInputChange("allowances", e.target.value)}
                 />
               </div>
             </div>
           </CardContent>
         </Card>
-
-        {/* Emergency Contact */}
         <Card>
           <CardHeader>
             <CardTitle>Emergency Contact Information</CardTitle>
@@ -433,7 +484,7 @@ export default function EditPrimaryTeacher({ params }) {
                 <Input
                   id="emergencyContact"
                   placeholder="Contact person's name"
-                  value={formData.emergencyContact}
+                  value={formData.emergencyContact || ""}
                   onChange={(e) => handleInputChange("emergencyContact", e.target.value)}
                 />
               </div>
@@ -442,25 +493,22 @@ export default function EditPrimaryTeacher({ params }) {
                 <Input
                   id="emergencyPhone"
                   placeholder="+977-98XXXXXXXX"
-                  value={formData.emergencyPhone}
+                  value={formData.emergencyPhone || ""}
                   onChange={(e) => handleInputChange("emergencyPhone", e.target.value)}
                 />
               </div>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="notes">Additional Notes</Label>
               <Textarea
                 id="notes"
                 placeholder="Any additional information about the teacher"
-                value={formData.notes}
+                value={formData.notes || ""}
                 onChange={(e) => handleInputChange("notes", e.target.value)}
               />
             </div>
           </CardContent>
         </Card>
-
-        {/* Action Buttons */}
         <div className="flex gap-4">
           <Button type="submit" className="flex items-center gap-2">
             <Save className="w-4 h-4" />
