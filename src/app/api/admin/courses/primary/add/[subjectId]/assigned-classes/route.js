@@ -1,7 +1,7 @@
 import PrimarySubjectModel from "@/models/admin/course/subjects/primarySubject.model";
 
 export async function GET() {
-    Response.json({
+   return  Response.json({
         message: "Teacher is assigned"
     })
 

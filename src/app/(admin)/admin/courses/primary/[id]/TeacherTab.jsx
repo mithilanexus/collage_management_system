@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge, BookOpen, Edit, Plus, Target, Trash2, User, Users } from "lucide-react";
+import { Badge, BookOpen, Edit, Plus, Target, Trash2, User, Users, X } from "lucide-react";
 
 export default function TeacherTab({ classData }) {
     const [teacherAssignments, setTeacherAssignments] = useState({});
@@ -111,43 +111,44 @@ export default function TeacherTab({ classData }) {
     };
 
 
-    const removeTeacher = (subject, teacher) => {
-        const updatedSubject = availableSubjects.map(sub =>
+    const removeTeacher = async (subject, teacher) => {
+        console.log(subject);
+        console.log(teacher);
+        const assignedClassId = subject.assignedClasses.find(ac => ac.teacherId === teacher._id && ac.class === classData.grade);
+        console.log(assignedClassId);
+        const updatedSubjects = availableSubjects.map(sub =>
             sub.code === subject.code
                 ? {
                     ...sub,
                     assignedClasses: sub.assignedClasses.filter(
-                        ac => ac.teacherId !== teacher._id || ac.class !== classData.grade
+                        ac => {
+                            return console.log(ac.teacherId !== teacher._id || ac.class !== classData.grade)
+                        }
                     )
                 }
                 : sub
         );
-        console.log(updatedSubject);
-        setAvailableSubjects(updatedSubject); 
-        console.log(availableSubjects);
-        
-        
-
-        // try {
-        //     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/remove/${params.id}/assigned-classes`, {
-        //         method: "POST",
-        //         body: JSON.stringify({
-        //             teacher: teacher.name,
-        //             teacherId: teacher._id,
-        //             class: classData.grade,
-        //             subjectId: subject._id
-        //         })
-        //     });
-        //     const data = await res.json();
-        //     console.log(data);
-        //     setAvailableSubjects(updatedSubject);
-        // } catch (error) {
-        //     console.error(error);
-        // }
+        setAvailableSubjects(updatedSubjects); 
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/add/${params.id}/assigned-classes/${teacher._id}`, {
+                method: "DELETE",
+                body: JSON.stringify({
+                    teacher: teacher.name,
+                    teacherId: teacher._id,
+                    class: classData.grade,
+                    subjectId: subject._id,
+                    assignedClassId: assignedClassId
+                })
+            });
+            const data = await res.json();
+            console.log(data); 
+        } catch (error) {
+            console.error(error);
+        }
 
         toast.success(`Teacher removed from ${subject.name}`);
     };
-
+    const removeSubject = (subject) => { }
     const getTeacherWorkload = (teacherId) => {
         return Object.values(teacherAssignments).filter(
             assignment => assignment.teacherId === teacherId
@@ -235,7 +236,6 @@ export default function TeacherTab({ classData }) {
                             </thead>
                             <tbody>
                                 {availableSubjects.map((subject) => {
-                                    const assignment = teacherAssignments[subject._id];
                                     return (
                                         <tr key={subject._id}>
                                             <td className="border p-3 font-medium">{subject.name}</td>
@@ -255,18 +255,20 @@ export default function TeacherTab({ classData }) {
                                                                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                                                                             <User className="w-4 h-4 text-blue-600" />
                                                                         </div>
-                                                                        <p className="font-medium">{sub.teacher} </p>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <p className="font-medium">{sub.teacher} </p>
+                                                                            <button onClick={() => removeTeacher(subject, sub)} className="text-red-600 hover:text-red-700 cursor-pointer" title="Remove Teacher">
+                                                                                <X className="w-4 h-4" />
+                                                                            </button>
+                                                                        </div>
                                                                     </div>
-                                                                } else {
-                                                                    return <span className="text-muted-foreground">Not assigned</span>
                                                                 }
                                                             })
                                                         }
+                                                        <span key={subject._id}
+                                                            className={`text-muted-foreground ${subject.assignedClasses.filter(sub => sub.class == classData.grade).length > 0 ? 'hidden' : ''}`}>Not assigned</span>
                                                     </div>
                                                 </div>
-                                                {/*                                                     
-                                                //  : (
-                                                // )} */}
                                             </td>
 
                                             {/* <td className="border p-3">
@@ -301,8 +303,10 @@ export default function TeacherTab({ classData }) {
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
-                                                            onClick={() => removeTeacher(subject, subject.assignedClasses?.map(item => item.teacherId == classData.grade))}
-                                                            className="h-8 px-2 text-red-600 hover:text-red-700"
+
+                                                            title="Remove Subject"
+                                                            onClick={() => removeSubject(subject, subject.assignedClasses?.map(item => item.teacherId == classData.grade))}
+                                                            className="h-8 px-2 text-red-600 hover:text-red-700 cursor-pointer"
                                                         >
                                                             <Trash2 className="w-3 h-3" />
                                                         </Button>
