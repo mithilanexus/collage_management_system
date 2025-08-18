@@ -14,7 +14,8 @@ export default function TeacherTab({ classData }) {
     const [showAssignDialog, setShowAssignDialog] = useState(false);
     const [selectedSubject, setSelectedSubject] = useState("");
     const [availableSubjects, setAvailableSubjects] = useState([]);
-    const [filteredSubjects,setFilteredSubjects] = useState([])
+    const [filteredSubjects, setFilteredSubjects] = useState([])
+    const [filteredTeachers, setFilteredTeachers] = useState([])
 
 
 
@@ -54,65 +55,97 @@ export default function TeacherTab({ classData }) {
             );
             const data = await res.json();
             setAvailableTeachers([...data.data]);
+            setFilteredTeachers([...data.data])
         } catch (error) {
             console.error("Error fetching teachers:", error);
         }
     };
     const params = useParams()
     const assignTeacher = async (subject, teacher) => {
-        console.log(teacher)
-        // update the matching subject inside availableSubjects
+        console.log(teacher);
+
+        // Update availableSubjects, ensuring only one object per class in assignedClasses
         setAvailableSubjects(prev =>
             prev.map(sub =>
                 sub.code === subject.code
                     ? {
                         ...sub,
-                        assignedSubjects: Array.isArray(sub.assignedSubjects)
-                            ? [
-                                ...sub.assignedSubjects.filter(a => a.teacherId !== teacher.id), // avoid dup
-                                { teacher: teacher.name, teacherId: teacher.id, class: classData.grade }
-                            ]
-                            : [{ teacher: teacher.name, teacherId: teacher.id, class: classData.grade }]
+                        assignedClasses: [
+                            // Keep only entries for different classes, remove any for the same class
+                            ...(sub.assignedClasses?.filter(a => a.class !== classData.grade) || []),
+                            { teacher: teacher.name, teacherId: teacher._id, class: classData.grade }
+                        ]
                     }
                     : sub
             )
         );
 
+        console.log(availableSubjects);
+
+        // Update teacherAssignments, guarding against non-array prev
         setTeacherAssignments(prev => [
             ...(Array.isArray(prev) ? prev : []),
             teacher
         ]);
+
         const updatingData = {
             teacher: teacher.name,
             teacherId: teacher._id,
             class: classData.grade,
-            subjectId:subject._id
-        }  
-        console.log(params)
-        try {
-            // const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/add/${params.id}/assigned-classes`, {
-            //     method: "POST",
-            //     body: JSON.stringify(updatingData)
+            subjectId: subject._id
+        };
 
-            // })
-            // const data = await res.json()
-            // console.log(data)
+        console.log(params);
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/add/${params.id}/assigned-classes`, {
+                method: "POST",
+                body: JSON.stringify(updatingData)
+            });
+            const data = await res.json();
+            console.log(data);
             toast.success(`${teacher.name} assigned to ${subject.name}`);
         } catch (error) {
-
+            console.error(error);
         }
-        // guard in case prev isn't an array
-
     };
 
 
-    const removeTeacher = (subject) => {
-        setTeacherAssignments(prev => {
-            const updated = { ...prev };
-            delete updated[subject];
-            return updated;
-        });
-        toast.success(`Teacher removed from ${subject}`);
+    const removeTeacher = (subject, teacher) => {
+        const updatedSubject = availableSubjects.map(sub =>
+            sub.code === subject.code
+                ? {
+                    ...sub,
+                    assignedClasses: sub.assignedClasses.filter(
+                        ac => ac.teacherId !== teacher._id || ac.class !== classData.grade
+                    )
+                }
+                : sub
+        );
+        console.log(updatedSubject);
+        setAvailableSubjects(updatedSubject); 
+        console.log(availableSubjects);
+        
+        
+
+        // try {
+        //     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/remove/${params.id}/assigned-classes`, {
+        //         method: "POST",
+        //         body: JSON.stringify({
+        //             teacher: teacher.name,
+        //             teacherId: teacher._id,
+        //             class: classData.grade,
+        //             subjectId: subject._id
+        //         })
+        //     });
+        //     const data = await res.json();
+        //     console.log(data);
+        //     setAvailableSubjects(updatedSubject);
+        // } catch (error) {
+        //     console.error(error);
+        // }
+
+        toast.success(`Teacher removed from ${subject.name}`);
     };
 
     const getTeacherWorkload = (teacherId) => {
@@ -121,6 +154,19 @@ export default function TeacherTab({ classData }) {
         ).length;
     };
 
+    const filterTeacher = (subject) => {
+        // Get IDs of teachers already assigned to this subject
+        const assignedTeacherIds = [...new Set(subject.assignedClasses?.filter(sub => sub.class === classData.grade).map(sub => sub.teacherId) || [])];
+
+        // Filter teachers who can teach the subject, are NOT assigned and their class matches
+        const filteredTeachers = availableTeachers.filter(teacher =>
+            teacher.subjects.map(s => s.name).includes(subject.name) &&
+            !assignedTeacherIds.includes(teacher._id)
+        );
+
+        console.log('Unassigned Teachers:', filteredTeachers);
+        setFilteredTeachers(filteredTeachers);
+    }
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -199,17 +245,20 @@ export default function TeacherTab({ classData }) {
                                             <td className="border p-3">
                                                 {/* { */}
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                                        <User className="w-4 h-4 text-blue-600" />
-                                                    </div>
+
                                                     <div>
                                                         {
                                                             subject.assignedClasses?.map((sub) => {
                                                                 if (sub.class == classData.grade) {
 
-                                                                    return <p className="font-medium">{sub.teacher} </p>
+                                                                    return <div className="flex items-center gap-2">
+                                                                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                                                            <User className="w-4 h-4 text-blue-600" />
+                                                                        </div>
+                                                                        <p className="font-medium">{sub.teacher} </p>
+                                                                    </div>
                                                                 } else {
-                                                                    <span className="text-muted-foreground">Not assigned</span>
+                                                                    return <span className="text-muted-foreground">Not assigned</span>
                                                                 }
                                                             })
                                                         }
@@ -241,17 +290,18 @@ export default function TeacherTab({ classData }) {
                                                         variant="outline"
                                                         onClick={() => {
                                                             setSelectedSubject(subject);
+                                                            filterTeacher(subject);
                                                             setShowAssignDialog(true);
                                                         }}
                                                         className="h-8 px-2"
                                                     >
-                                                        {subject.assignedSubjects?.map(item => item.class == classData.grade).length ? <Edit className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                                                        {subject.assignedClasses?.map(item => item.class == classData.grade).length ? <Edit className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
                                                     </Button>
-                                                    {subject.assignedSubjects?.map(item => item.class == classData.grade).length && (
+                                                    {subject.assignedClasses?.map(item => item.class == classData.grade).length && (
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
-                                                            onClick={() => removeTeacher(subject)}
+                                                            onClick={() => removeTeacher(subject, subject.assignedClasses?.map(item => item.teacherId == classData.grade))}
                                                             className="h-8 px-2 text-red-600 hover:text-red-700"
                                                         >
                                                             <Trash2 className="w-3 h-3" />
@@ -275,6 +325,7 @@ export default function TeacherTab({ classData }) {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
                         {availableTeachers.map((teacher) => {
                             const workload = getTeacherWorkload(teacher.id);
                             console.log(workload)
@@ -359,45 +410,49 @@ export default function TeacherTab({ classData }) {
 
                             <div>
                                 <label className="text-sm font-medium">Available Teachers</label>
-                                <div className="mt-2 space-y-2 max-h-60 overflow-y-auto">
-                                    {availableTeachers
-                                        .map((teacher) => (
+                                {filteredTeachers.length > 0 ? (
+                                    <div className="mt-2 space-y-2 max-h-60 overflow-y-auto">
+                                        {filteredTeachers
+                                            .map((teacher) => (
 
-                                            <div
-                                                key={teacher.id}
-                                                className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                                                onClick={() => {
-                                                    if (selectedSubject) {
-                                                        assignTeacher(selectedSubject, teacher);
-                                                        setShowAssignDialog(false);
-                                                        setSelectedSubject("");
-                                                    }
-                                                }}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                                        <User className="w-4 h-4 text-blue-600" />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <p className="font-medium">{teacher.name}</p>
-                                                        <p className="text-sm text-muted-foreground">{teacher.qualification}</p>
-                                                        {/* <div className="flex gap-1 mt-1">
+                                                <div
+                                                    key={teacher.id}
+                                                    className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                                                    onClick={() => {
+                                                        if (selectedSubject) {
+                                                            assignTeacher(selectedSubject, teacher);
+                                                            setShowAssignDialog(false);
+                                                            setSelectedSubject("");
+                                                        }
+                                                    }}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                                            <User className="w-4 h-4 text-blue-600" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="font-medium">{teacher.name}</p>
+                                                            <p className="text-sm text-muted-foreground">{teacher.qualification}</p>
+                                                            {/* <div className="flex gap-1 mt-1">
                                                             {teacher.specializations.map((spec) => (
                                                                 <Badge key={spec} variant="outline" className="text-xs">
                                                                     {spec}
                                                                 </Badge>
                                                             ))}
                                                         </div> */}
+                                                        </div>
+                                                        {selectedSubject && (
+                                                            <Badge className="bg-green-100 text-green-800">
+                                                                Qualified
+                                                            </Badge>
+                                                        )}
                                                     </div>
-                                                    {selectedSubject && (
-                                                        <Badge className="bg-green-100 text-green-800">
-                                                            Qualified
-                                                        </Badge>
-                                                    )}
                                                 </div>
-                                            </div>
-                                        ))}
-                                </div>
+                                            ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-muted-foreground">No available teachers</p>
+                                )}
                             </div>
 
                             <div className="flex gap-2 pt-4">
