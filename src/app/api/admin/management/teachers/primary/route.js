@@ -1,8 +1,13 @@
 import PrimaryLevelTeacherModel from "@/models/admin/management/teacher/primaryLevel/primaryLevelTeacher.model";
-
+import "@/models";
 export async function GET() {
     try {
-        const teachers = await PrimaryLevelTeacherModel.find({}).lean();
+        const teachers = await PrimaryLevelTeacherModel.find({})
+            .populate({
+                path: 'subjects',
+                model: 'PrimarySubject',
+            })
+            .lean();
         return Response.json({
             message: "Teachers data retrieved successfully",
             success: true,

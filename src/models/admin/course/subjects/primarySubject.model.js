@@ -33,7 +33,16 @@ const primarySubjectSchema = new Schema(
     subjectLevel: {
       type: String,
       default: "primary"
-    }
+    },
+    assignedClasses: [
+      {
+        teacher: {
+          type: String,
+        },
+        teacherId: String,
+        class: String
+      }
+    ]
   },
   { timestamps: true }
 );
