@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge, BookOpen, Plus, Target, User, Users } from "lucide-react";
+import { Badge, BookOpen, Edit, Plus, Target, Trash2, User, Users } from "lucide-react";
 
 export default function TeacherTab({ classData }) {
     const [teacherAssignments, setTeacherAssignments] = useState({});
@@ -14,60 +14,14 @@ export default function TeacherTab({ classData }) {
     const [showAssignDialog, setShowAssignDialog] = useState(false);
     const [selectedSubject, setSelectedSubject] = useState("");
     const [availableSubjects, setAvailableSubjects] = useState([]);
+    const [filteredSubjects,setFilteredSubjects] = useState([])
 
-    // Mock available teachers data
-    const mockTeachers = [
-        {
-            id: 1,
-            name: "Mrs. Sita Sharma",
-            qualification: "M.A. Nepali",
-            experience: "8 years",
-            specializations: ["Nepali", "Literature"],
-            email: "sita.sharma@school.edu",
-            phone: "+977-9841234567"
-        },
-        {
-            id: 2,
-            name: "Mr. John Smith",
-            qualification: "M.A. English",
-            experience: "6 years",
-            specializations: ["English", "Communication"],
-            email: "john.smith@school.edu",
-            phone: "+977-9841234568"
-        },
-        {
-            id: 3,
-            name: "Dr. Ram Prasad",
-            qualification: "M.Sc. Mathematics",
-            experience: "12 years",
-            specializations: ["Mathematics", "Physics"],
-            email: "ram.prasad@school.edu",
-            phone: "+977-9841234569"
-        },
-        {
-            id: 4,
-            name: "Ms. Lisa Johnson",
-            qualification: "M.Sc. Science",
-            experience: "5 years",
-            specializations: ["Science", "Biology", "Chemistry"],
-            email: "lisa.johnson@school.edu",
-            phone: "+977-9841234570"
-        },
-        {
-            id: 5,
-            name: "Mr. Hari Bahadur",
-            qualification: "M.A. Social Studies",
-            experience: "10 years",
-            specializations: ["Social Studies", "History", "Geography"],
-            email: "hari.bahadur@school.edu",
-            phone: "+977-9841234571"
-        }
-    ];
 
 
     // Initialize teacher assignments
     useEffect(() => {
         getAvailableSubjects();
+        getAvailableTeachers()
         const initialAssignments = {};
         classData.subjects.forEach((subject) => {
             initialAssignments[subject.name] = {
@@ -78,7 +32,6 @@ export default function TeacherTab({ classData }) {
             };
         });
         setTeacherAssignments(initialAssignments);
-        setAvailableTeachers(mockTeachers);
     }, [classData]);
 
     const getAvailableSubjects = async () => {
@@ -88,27 +41,70 @@ export default function TeacherTab({ classData }) {
             );
             const data = await res.json();
             setAvailableSubjects([...data.data]);
+            setFilteredSubjects([...data.data])
         } catch (error) {
             console.error("Error fetching subjects:", error);
         }
     };
 
-
-    const assignTeacher = (subject, teacher) => {
-        setTeacherAssignments(prev => ({
-            ...prev,
-            [subject.name]: {
-                teacherId: teacher.id,
-                teacherName: teacher.name,
-                qualification: teacher.qualification,
-                experience: teacher.experience,
-                email: teacher.email,
-                phone: teacher.phone,
-                specializations: teacher.specializations
-            }
-        }));
-        toast.success(`${teacher.name} assigned to ${subject.name}`);
+    const getAvailableTeachers = async () => {
+        try {
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teachers/primary`
+            );
+            const data = await res.json();
+            setAvailableTeachers([...data.data]);
+        } catch (error) {
+            console.error("Error fetching teachers:", error);
+        }
     };
+    const params = useParams()
+    const assignTeacher = async (subject, teacher) => {
+        console.log(teacher)
+        // update the matching subject inside availableSubjects
+        setAvailableSubjects(prev =>
+            prev.map(sub =>
+                sub.code === subject.code
+                    ? {
+                        ...sub,
+                        assignedSubjects: Array.isArray(sub.assignedSubjects)
+                            ? [
+                                ...sub.assignedSubjects.filter(a => a.teacherId !== teacher.id), // avoid dup
+                                { teacher: teacher.name, teacherId: teacher.id, class: classData.grade }
+                            ]
+                            : [{ teacher: teacher.name, teacherId: teacher.id, class: classData.grade }]
+                    }
+                    : sub
+            )
+        );
+
+        setTeacherAssignments(prev => [
+            ...(Array.isArray(prev) ? prev : []),
+            teacher
+        ]);
+        const updatingData = {
+            teacher: teacher.name,
+            teacherId: teacher._id,
+            class: classData.grade,
+            subjectId:subject._id
+        }  
+        console.log(params)
+        try {
+            // const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/add/${params.id}/assigned-classes`, {
+            //     method: "POST",
+            //     body: JSON.stringify(updatingData)
+
+            // })
+            // const data = await res.json()
+            // console.log(data)
+            toast.success(`${teacher.name} assigned to ${subject.name}`);
+        } catch (error) {
+
+        }
+        // guard in case prev isn't an array
+
+    };
+
 
     const removeTeacher = (subject) => {
         setTeacherAssignments(prev => {
@@ -198,31 +194,37 @@ export default function TeacherTab({ classData }) {
                                         <tr key={subject._id}>
                                             <td className="border p-3 font-medium">{subject.name}</td>
                                             <td className="border p-3">
-                                                {subject ? subject.code: "-"}
+                                                {subject ? subject.code : "-"}
                                             </td>
                                             <td className="border p-3">
-                                                {assignment ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                                            <User className="w-4 h-4 text-blue-600" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-medium">{assignment.teacherName}</p>
-                                                            {assignment.email && (
-                                                                <p className="text-xs text-muted-foreground">{assignment.email}</p>
-                                                            )}
-                                                        </div>
+                                                {/* { */}
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                                        <User className="w-4 h-4 text-blue-600" />
                                                     </div>
-                                                ) : (
-                                                    <span className="text-muted-foreground">Not assigned</span>
-                                                )}
+                                                    <div>
+                                                        {
+                                                            subject.assignedClasses?.map((sub) => {
+                                                                if (sub.class == classData.grade) {
+
+                                                                    return <p className="font-medium">{sub.teacher} </p>
+                                                                } else {
+                                                                    <span className="text-muted-foreground">Not assigned</span>
+                                                                }
+                                                            })
+                                                        }
+                                                    </div>
+                                                </div>
+                                                {/*                                                     
+                                                //  : (
+                                                // )} */}
                                             </td>
-                                            
+
                                             {/* <td className="border p-3">
                                                 {assignment ? assignment.experience : "-"}
                                             </td> */}
                                             <td className="border p-3 text-center">
-                                                {subject.status=="active" ? (
+                                                {subject.status == "active" ? (
                                                     <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
                                                         Active
                                                     </Badge>
@@ -243,9 +245,9 @@ export default function TeacherTab({ classData }) {
                                                         }}
                                                         className="h-8 px-2"
                                                     >
-                                                        {assignment ? <Edit className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                                                        {subject.assignedSubjects?.map(item => item.class == classData.grade).length ? <Edit className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
                                                     </Button>
-                                                    {assignment && (
+                                                    {subject.assignedSubjects?.map(item => item.class == classData.grade).length && (
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
@@ -275,6 +277,7 @@ export default function TeacherTab({ classData }) {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {availableTeachers.map((teacher) => {
                             const workload = getTeacherWorkload(teacher.id);
+                            console.log(workload)
                             return (
                                 <Card key={teacher.id} className="border-2 hover:border-blue-200 transition-colors">
                                     <CardContent className="p-4">
@@ -301,7 +304,7 @@ export default function TeacherTab({ classData }) {
                                             </div>
                                         </div>
 
-                                        <div className="mt-3">
+                                        {/* <div className="mt-3">
                                             <p className="text-xs text-muted-foreground mb-1">Specializations:</p>
                                             <div className="flex flex-wrap gap-1">
                                                 {teacher.specializations.map((spec) => (
@@ -310,7 +313,7 @@ export default function TeacherTab({ classData }) {
                                                     </Badge>
                                                 ))}
                                             </div>
-                                        </div>
+                                        </div> */}
 
                                         <div className="mt-3 space-y-1 text-xs text-muted-foreground">
                                             <p>📧 {teacher.email}</p>
@@ -331,9 +334,8 @@ export default function TeacherTab({ classData }) {
                         <CardHeader>
                             <CardTitle>
                                 {
-                                    selectedSubject ? `Assign Teacher to ${
-                                        typeof selectedSubject === "string" ? selectedSubject : selectedSubject.name
-                                    }` : "Assign Teacher"}
+                                    selectedSubject ? `Assign Teacher to ${typeof selectedSubject === "string" ? selectedSubject : selectedSubject.name
+                                        }` : "Assign Teacher"}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -345,7 +347,7 @@ export default function TeacherTab({ classData }) {
                                             <SelectValue placeholder="Choose a subject" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {availableSubjects.map((subject) => (
+                                            {filteredSubjects.map((subject) => (
                                                 <SelectItem key={subject.name} value={subject.name}>
                                                     {subject.name}
                                                 </SelectItem>
@@ -360,6 +362,7 @@ export default function TeacherTab({ classData }) {
                                 <div className="mt-2 space-y-2 max-h-60 overflow-y-auto">
                                     {availableTeachers
                                         .map((teacher) => (
+
                                             <div
                                                 key={teacher.id}
                                                 className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
@@ -378,13 +381,13 @@ export default function TeacherTab({ classData }) {
                                                     <div className="flex-1">
                                                         <p className="font-medium">{teacher.name}</p>
                                                         <p className="text-sm text-muted-foreground">{teacher.qualification}</p>
-                                                        <div className="flex gap-1 mt-1">
+                                                        {/* <div className="flex gap-1 mt-1">
                                                             {teacher.specializations.map((spec) => (
                                                                 <Badge key={spec} variant="outline" className="text-xs">
                                                                     {spec}
                                                                 </Badge>
                                                             ))}
-                                                        </div>
+                                                        </div> */}
                                                     </div>
                                                     {selectedSubject && (
                                                         <Badge className="bg-green-100 text-green-800">
