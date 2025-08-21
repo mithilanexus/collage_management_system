@@ -41,6 +41,7 @@ import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import da from "zod/v4/locales/da.cjs";
 import TeacherTab from "./TeacherTab";
+import ScheduleTab from "./ScheduleTab";
 
 export default function PrimaryClassDetails() {
   const params = useParams();
@@ -565,7 +566,7 @@ export default function PrimaryClassDetails() {
       </Card>
 
       {/* Detailed Information */}
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs defaultValue="schedule" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5 lg:w-fit lg:grid-cols-5">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Eye className="w-4 h-4" />
@@ -838,7 +839,7 @@ export default function PrimaryClassDetails() {
         </TabsContent>
 
         <TabsContent value="schedule" className="space-y-6">
-          <ScheduleManager classData={classData} />
+          <ScheduleTab classData={classData} />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">
@@ -1015,238 +1016,4 @@ export default function PrimaryClassDetails() {
       </Tabs>
     </div>
   );
-}
-
-// Schedule Manager Component
-function ScheduleManager({ classData }) {
-  const [schedule, setSchedule] = useState({});
-
-  // Initialize schedule from classData
-  useEffect(() => {
-    const initialSchedule = {};
-    classData.schedule.forEach((dayData) => {
-      initialSchedule[dayData.day] = dayData.periods;
-    });
-    setSchedule(initialSchedule);
-  }, [classData]);
-
-  const timeSlots = [
-    "10:00-10:45", "10:45-11:30", "11:30-12:15", "12:15-1:00",
-    "1:00-1:45", "1:45-2:30", "2:30-3:15"
-  ];
-
-  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-
-  const availableSubjects = [
-    "Nepali", "English", "Mathematics", "Science", "Social Studies",
-    "Health & Physical Education", "Computer", "Art", "Music", "Moral Education"
-  ];
-
-  const handlePeriodChange = (day, periodIndex, newSubject) => {
-    setSchedule(prev => ({
-      ...prev,
-      [day]: prev[day]?.map((period, index) =>
-        index === periodIndex ? newSubject : period
-      ) || []
-    }));
-  };
-
-  const addPeriod = (day) => {
-    setSchedule(prev => ({
-      ...prev,
-      [day]: [...(prev[day] || []), "Free Period"]
-    }));
-  };
-
-  const removePeriod = (day, periodIndex) => {
-    setSchedule(prev => ({
-      ...prev,
-      [day]: prev[day]?.filter((_, index) => index !== periodIndex) || []
-    }));
-  };
-
-  const saveSchedule = () => {
-    console.log("Saving schedule:", schedule);
-    toast.success("Schedule saved successfully!");
-  };
-
-
-
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Schedule Management</h3>
-          <p className="text-sm text-muted-foreground">
-            Manage weekly schedule for {classData.grade} ({classData.nepaliName})
-          </p>
-        </div>
-        <Button onClick={saveSchedule} className="flex items-center gap-2">
-          <Save className="w-4 h-4" />
-          Save Schedule
-        </Button>
-      </div>
-
-      {/* Time Slots Reference */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Time Slots</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {timeSlots.map((slot, index) => (
-              <Badge key={index} variant="outline" className="text-xs">
-                Period {index + 1}: {slot}
-              </Badge>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Schedule Grid */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Weekly Schedule</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="border p-2 bg-muted font-medium text-left min-w-[100px]">Day</th>
-                  {timeSlots.map((slot, index) => (
-                    <th key={index} className="border p-2 bg-muted font-medium text-center min-w-[120px]">
-                      <div className="text-xs">Period {index + 1}</div>
-                      <div className="text-xs text-muted-foreground">{slot}</div>
-                    </th>
-                  ))}
-                  <th className="border p-2 bg-muted font-medium text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {days.map((day) => (
-                  <tr key={day}>
-                    <td className="border p-2 font-medium bg-muted/50">{day}</td>
-                    {schedule[day]?.map((period, periodIndex) => (
-                      <td key={periodIndex} className="border p-1">
-                        <Select
-                          value={period}
-                          onValueChange={(value) => handlePeriodChange(day, periodIndex, value)}
-                        >
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Break">Break</SelectItem>
-                            <SelectItem value="Free Period">Free Period</SelectItem>
-                            {availableSubjects.map((subject) => (
-                              <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                    )) || <td className="border p-2 text-center text-muted-foreground" colSpan={timeSlots.length}>No schedule set</td>}
-                    <td className="border p-1">
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => addPeriod(day)}
-                          className="h-6 w-6 p-0"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </Button>
-                        {schedule[day]?.length > 0 && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => removePeriod(day, schedule[day].length - 1)}
-                            className="h-6 w-6 p-0 text-red-600"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Schedule Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Schedule Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-muted/50 rounded-lg">
-              <p className="text-2xl font-bold text-blue-600">
-                {Object.values(schedule).reduce((total, daySchedule) => total + (daySchedule?.length || 0), 0)}
-              </p>
-              <p className="text-sm text-muted-foreground">Total Periods/Week</p>
-            </div>
-            <div className="text-center p-4 bg-muted/50 rounded-lg">
-              <p className="text-2xl font-bold text-green-600">
-                {Object.values(schedule).reduce((total, daySchedule) =>
-                  total + (daySchedule?.filter(period => availableSubjects.includes(period)).length || 0), 0
-                )}
-              </p>
-              <p className="text-sm text-muted-foreground">Subject Periods</p>
-            </div>
-            <div className="text-center p-4 bg-muted/50 rounded-lg">
-              <p className="text-2xl font-bold text-orange-600">
-                {Object.values(schedule).reduce((total, daySchedule) =>
-                  total + (daySchedule?.filter(period => period === "Break").length || 0), 0
-                )}
-              </p>
-              <p className="text-sm text-muted-foreground">Break Periods</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="flex items-center gap-2 h-auto p-4">
-              <Clock className="w-5 h-5" />
-              <div className="text-left">
-                <p className="font-medium">Copy Schedule</p>
-                <p className="text-sm text-muted-foreground">Copy from another class</p>
-              </div>
-            </Button>
-
-            <Button variant="outline" className="flex items-center gap-2 h-auto p-4">
-              <Edit className="w-5 h-5" />
-              <div className="text-left">
-                <p className="font-medium">Bulk Edit</p>
-                <p className="text-sm text-muted-foreground">Edit multiple periods</p>
-              </div>
-            </Button>
-
-            <Button variant="outline" className="flex items-center gap-2 h-auto p-4">
-              <Calendar className="w-5 h-5" />
-              <div className="text-left">
-                <p className="font-medium">Print Schedule</p>
-                <p className="text-sm text-muted-foreground">Generate printable version</p>
-              </div>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-    </div>
-  );
-}
-
-// Teacher Manager Component
+} 
