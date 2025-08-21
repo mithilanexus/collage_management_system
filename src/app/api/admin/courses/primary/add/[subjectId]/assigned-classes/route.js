@@ -21,7 +21,7 @@ export async function POST(request, context) {
                             $filter: {
                                 input: '$assignedClasses',
                                 as: 'cls',
-                                cond: { $ne: ['$$cls.class', req.class] }
+                                cond: { $ne: ['$$cls.classId', req.classId] }
                             }
                         }
                     }

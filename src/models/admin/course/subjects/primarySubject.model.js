@@ -40,7 +40,8 @@ const primarySubjectSchema = new Schema(
           type: String,
         },
         teacherId: String,
-        class: String
+        classId: String,
+        classGrade: String,
       }
     ]
   },

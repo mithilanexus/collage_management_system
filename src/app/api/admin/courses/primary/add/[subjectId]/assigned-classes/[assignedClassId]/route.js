@@ -9,11 +9,9 @@ export async function GET() {
 
 export async function DELETE(request, context) {
     try {
-        const { assignedClassId } = await context.params;
-
-        console.log(assignedClassId);
-        const req = await request.json();
-        console.log(req);
+        const assignedClassId = context.params.assignedClassId;
+        const subjectId = context.params.subjectId;
+        console.log(assignedClassId, subjectId);
 
         if (!assignedClassId) {
             return Response.json({
@@ -22,12 +20,12 @@ export async function DELETE(request, context) {
             }, { status: 400 });
         }
 
+
         const res = await PrimarySubjectModel.findOneAndUpdate(
-            { _id: req.subjectId },
-            { $pull: { assignedClasses: { _id: req.assignedClassId } } },
+            { _id: subjectId },
+            { $pull: { assignedClasses: { classId: assignedClassId } } },
             { new: true }
         );
-        console.log(res);
 
         if (!res) {
             return Response.json({
@@ -38,7 +36,8 @@ export async function DELETE(request, context) {
 
         return Response.json({
             message: "Teacher unassigned successfully",
-            success: true
+            success: true,
+            data: res
         });
 
     } catch (error) {
