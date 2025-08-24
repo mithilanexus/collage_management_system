@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -13,6 +13,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { toast } from "sonner";
 import { Zap, ArrowLeft } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const schema = z.object({
   resourceName: z.string().min(1),
@@ -37,6 +47,8 @@ export default function EditResourcePage() {
   const params = useParams();
   const id = params?.resourceId;
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -66,9 +78,11 @@ export default function EditResourcePage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/resources/${id}`);
       const data = await res.json();
       form.reset(data.data);
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching resource:", error);
       toast.error("Failed to fetch resource");
+      setLoading(false);
     }
   };
 
@@ -126,7 +140,7 @@ export default function EditResourcePage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={(e) => { e.preventDefault(); setConfirmOpen(true); }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField control={form.control} name="resourceName" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Resource Name</FormLabel>
@@ -231,6 +245,45 @@ export default function EditResourcePage() {
           </Form>
         </CardContent>
       </Card>
+
+      {/* Skeleton while loading */}
+      {loading && (
+        <div className="space-y-6">
+          <div className="h-6 w-40 bg-muted rounded animate-pulse" />
+          <Card>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Array.from({ length: 16 }).map((_, i) => (
+                  <div key={i} className={i % 6 === 0 ? "md:col-span-2 space-y-2" : "space-y-2"}>
+                    <div className="h-4 w-24 bg-muted/70 rounded animate-pulse" />
+                    <div className="h-10 w-full bg-muted rounded animate-pulse" />
+                  </div>
+                ))}
+                <div className="md:col-span-2 flex items-center justify-end gap-2 pt-2">
+                  <div className="h-10 w-24 bg-muted rounded animate-pulse" />
+                  <div className="h-10 w-28 bg-muted rounded animate-pulse" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Update Confirmation */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Update resource?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will save your changes to the resource. You can’t undo this action.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmOpen(false); form.handleSubmit(onSubmit)(); }}>Confirm Update</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -14,6 +14,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { toast } from "sonner";
 import { Calendar, ArrowLeft } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useState } from "react";
 
 const schema = z.object({
   eventName: z.string().min(1),
@@ -43,6 +54,8 @@ export default function EditEventPage() {
   const params = useParams();
   const id = params?.eventId;
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -76,8 +89,10 @@ export default function EditEventPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/events/${id}`);
       const data = await res.json();
       form.reset(data.data);
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching event:', error);
+      setLoading(false);
     }
   };
 
@@ -134,7 +149,7 @@ export default function EditEventPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={(e) => { e.preventDefault(); setConfirmOpen(true); }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField control={form.control} name="eventName" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Event Name</FormLabel>
@@ -268,6 +283,45 @@ export default function EditEventPage() {
           </Form>
         </CardContent>
       </Card>
+
+      {/* Skeleton while loading */}
+      {loading && (
+        <div className="space-y-6">
+          <div className="h-6 w-40 bg-muted rounded animate-pulse" />
+          <Card>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Array.from({ length: 16 }).map((_, i) => (
+                  <div key={i} className={i % 7 === 0 ? "md:col-span-2 space-y-2" : "space-y-2"}>
+                    <div className="h-4 w-24 bg-muted/70 rounded animate-pulse" />
+                    <div className="h-10 w-full bg-muted rounded animate-pulse" />
+                  </div>
+                ))}
+                <div className="md:col-span-2 flex items-center justify-end gap-2 pt-2">
+                  <div className="h-10 w-24 bg-muted rounded animate-pulse" />
+                  <div className="h-10 w-28 bg-muted rounded animate-pulse" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Update Confirmation */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Update event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will save your changes to the event. You can’t undo this action.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmOpen(false); form.handleSubmit(onSubmit)(); }}>Confirm Update</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

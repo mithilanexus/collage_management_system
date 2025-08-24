@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +13,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { toast } from "sonner";
 import { Zap, ArrowLeft } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const schema = z.object({
   resourceName: z.string().min(1),
@@ -34,6 +45,8 @@ const schema = z.object({
 
 export default function AddResourcePage() {
   const router = useRouter();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -57,6 +70,8 @@ export default function AddResourcePage() {
   });
 
   const onSubmit = async (values) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/resources`, {
         method: "POST",
@@ -76,6 +91,8 @@ export default function AddResourcePage() {
     } catch (error) {
       console.error('Error creating resource:', error);
       toast.error("Error creating resource");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -97,7 +114,7 @@ export default function AddResourcePage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={(e) => { e.preventDefault(); setConfirmOpen(true); }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField control={form.control} name="resourceName" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Resource Name</FormLabel>
@@ -196,12 +213,29 @@ export default function AddResourcePage() {
 
               <div className="md:col-span-2 flex items-center justify-end gap-2 pt-2">
                 <Button type="button" variant="outline" onClick={() => router.push("/admin/campus/resources")}>Cancel</Button>
-                <Button type="submit">Save</Button>
+                <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Creating..." : "Save"}</Button>
               </div>
             </form>
           </Form>
         </CardContent>
       </Card>
+      {/* Create Confirmation */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create resource?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will create a new resource with the provided details.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmOpen(false); form.handleSubmit(onSubmit)(); }} disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : "Confirm Create"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

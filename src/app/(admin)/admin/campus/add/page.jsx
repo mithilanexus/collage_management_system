@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +13,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { toast } from "sonner";
 import { Building, ArrowLeft } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const facilitySchema = z.object({
   name: z.string().min(1, "Required"),
@@ -33,6 +44,8 @@ const facilitySchema = z.object({
 
 export default function AddFacilityPage() {
   const router = useRouter();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm({
     resolver: zodResolver(facilitySchema),
     defaultValues: {
@@ -55,6 +68,8 @@ export default function AddFacilityPage() {
   });
 
   const onSubmit = async (values) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     const payload = {
       ...values,
       facilities: values.facilities
@@ -79,6 +94,8 @@ export default function AddFacilityPage() {
     } catch (error) {
       console.error("Error creating facility:", error);
       toast.error(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -102,7 +119,7 @@ export default function AddFacilityPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={(e) => { e.preventDefault(); setConfirmOpen(true); }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -336,12 +353,30 @@ export default function AddFacilityPage() {
 
               <div className="md:col-span-2 flex items-center justify-end gap-2 pt-2">
                 <Button type="button" variant="outline" onClick={() => router.push("/admin/campus")}>Cancel</Button>
-                <Button type="submit">Save</Button>
+                <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Creating..." : "Save"}</Button>
               </div>
             </form>
           </Form>
         </CardContent>
       </Card>
+
+      {/* Create Confirmation */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create facility?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will create a new facility with the provided details.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmOpen(false); form.handleSubmit(onSubmit)(); }} disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : "Confirm Create"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
