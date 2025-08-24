@@ -26,26 +26,39 @@ export default function ScheduleTab({ classData }) {
     const [openDialog, setOpenDialog] = useState(false);
     const [editingIndex, setEditingIndex] = useState(-1);
     const [newSlot, setNewSlot] = useState("");
-
+    const [availableSubjects, setAvailableSubjects] = useState([]);
+    const [seclectedSubject, setSeclectedSubject] = useState(null);
     useEffect(() => {
         const initialSchedule = {};
         classData.schedule.forEach((dayData) => {
             initialSchedule[dayData.day] = dayData.periods;
         });
+        fetchAvailableSubjects();
         setSchedule(initialSchedule);
     }, [classData]);
 
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-    const availableSubjects = [
-        "Nepali", "English", "Mathematics", "Science", "Social Studies",
-        "Health & Physical Education", "Computer", "Art", "Music", "Moral Education"
-    ];
 
-    const handlePeriodChange = (day, periodIndex, newSubject) => {
+    const fetchAvailableSubjects = async () => {
+        try {
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/subjects/primary`
+            );
+            const data = await res.json();
+            setAvailableSubjects([...data.data]);
+        } catch (error) {
+            console.error("Error fetching subjects:", error);
+        }
+    };
+
+    const handlePeriodChange = (day, periodIndex, newSubject, subject) => {
+        console.log(subject);
         setSchedule(prev => ({
             ...prev,
-            [day]: prev[day]?.map((period, index) =>
-                index === periodIndex ? newSubject : period
+            [day]: prev[day]?.map((period, index) => {
+                return index === periodIndex ? newSubject : period
+            }
+
             ) || []
         }));
     };
@@ -63,39 +76,56 @@ export default function ScheduleTab({ classData }) {
             [day]: prev[day]?.filter((_, index) => index !== periodIndex) || []
         }));
     };
- 
-    const saveSchedule = () => {
-            // transform schedule into schema-friendly format
-            const formattedSchedule = Object.entries(schedule).map(([day, periods]) => ({
-                day,
-                subjects: (periods || []).map((subject, index) => ({
+
+    const saveSchedule = async () => {
+        // transform schedule into schema-friendly format
+        const formattedSchedule = Object.entries(schedule).map(([day, periods]) => ({
+            day,
+            subjects: (periods || []).map((subject, index) => ({
+                periodNumber: index + 1,
+                subjectName: subject,
+                subjectId: "",      // you can map IDs here if available
+                teacherId: "",
+                teacherName: "",
+            })),
+        }));
+
+        const payload = {
+            classGrade: classData.grade,
+            classId: classData._id,
+            timeSlots: timeSlots.map((slot, index) => {
+                const [start, end] = slot.split("-");
+                return {
                     periodNumber: index + 1,
-                    subjectName: subject,
-                    subjectId: "",      // you can map IDs here if available
-                    teacherId: "",
-                    teacherName: "",
-                })),
-            }));
-
-            const payload = {
-                classGrade: classData.grade,
-                classId: classData._id,
-                timeSlots: timeSlots.map((slot, index) => {
-                    const [start, end] = slot.split("-");
-                    return {
-                        periodNumber: index + 1,
-                        start,
-                        end,
-                    };
-                }),
-                schedule: formattedSchedule,
-            };
-
-            console.log("Payload to save:", payload);
-
-            toast.success("Schedule saved successfully 💖");
+                    start,
+                    end,
+                };
+            }),
+            schedule: formattedSchedule,
         };
- 
+
+        console.log("Payload to save:", payload);
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/schedule/primary`, {
+                method: "POST",
+                body: JSON.stringify(payload),
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success("Schedule saved successfully 💖");
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to save schedule, sweetheart. Try again! 💕");
+        }
+    };
+
 
     const handleAddSlot = () => {
         if (newSlot && /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(newSlot)) {
@@ -288,16 +318,16 @@ export default function ScheduleTab({ classData }) {
                                             <td key={periodIndex} className="border p-1">
                                                 <Select
                                                     value={period}
-                                                    onValueChange={(value) => handlePeriodChange(day, periodIndex, value)}
+                                                    onValueChange={(value) => handlePeriodChange(day, periodIndex, value, seclectedSubject)}
                                                 >
                                                     <SelectTrigger className="h-8 text-xs">
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="Break">Break</SelectItem>
-                                                        <SelectItem value="Free Period">Free Period</SelectItem>
+                                                        <SelectItem value="Break" onClick={() => setSeclectedSubject(null)}>Break</SelectItem>
+                                                        <SelectItem value="Free Period" onClick={() => setSeclectedSubject(null)}>Free Period</SelectItem>
                                                         {availableSubjects.map((subject) => (
-                                                            <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                                                            <SelectItem key={subject._id} value={subject.name} onClick={() => setSeclectedSubject(subject)}>{subject.name}</SelectItem>
                                                         ))}
                                                     </SelectContent>
                                                 </Select>

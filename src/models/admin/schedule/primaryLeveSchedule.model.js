@@ -33,5 +33,5 @@ const primaryClassScheduleSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
-
-export default mongoose.models.PrimaryClassSchedule || mongoose.model("PrimaryClassSchedule", primaryClassScheduleSchema);
+const PrimaryClassScheduleModel = mongoose.models.PrimaryClassSchedule || mongoose.model("PrimaryClassSchedule", primaryClassScheduleSchema);
+export default PrimaryClassScheduleModel

@@ -1,4 +1,4 @@
-import PrimaryClassScheduleModel from "@/models/admin/schedule/primaryLevelPeriodSlot.model";
+import PrimaryClassScheduleModel from "@/models/admin/schedule/primaryLeveSchedule.model";
 
 export async function GET(req, context) {
     try {
