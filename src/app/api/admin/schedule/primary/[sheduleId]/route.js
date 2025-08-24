@@ -2,7 +2,7 @@ import PrimaryClassScheduleModel from "@/models/admin/schedule/primaryLeveSchedu
 
 export async function GET(req, context) {
     try {
-        const schedule = await PrimaryClassScheduleModel.findById(context.params.sheduleId).lean();
+        const schedule = await PrimaryClassScheduleModel.find({classId: context.params.sheduleId}).lean();
         return Response.json(
             {
                 message: "Schedule fetched successfully",
