@@ -1,4 +1,4 @@
-import StudentModel from "@/models/student/Student.model";
+import StudentModel from "@/models/admin/management/student/Student.model";
 
 export async function GET(request, { params }) {
   try {

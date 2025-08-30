@@ -1,5 +1,5 @@
-import parentModel from "@/models/parent/Parent.model";
-import StudentModel from "@/models/student/Student.model";
+import StudentModel from "@/models/admin/management/student/Student.model";
+import parentModel from "@/models/parent/Parent.model"; 
 
 export async function POST(request, { params }) {
   try {

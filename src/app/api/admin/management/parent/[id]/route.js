@@ -1,6 +1,6 @@
  
 import parentModel from "@/models/parent/Parent.model";
-import "@/models/student/Student.model";
+import "@/models/admin/management/student/Student.model";
 export async function GET(request, { params }) {
   try {
     const parentId = params.id; // ✅ no await needed
