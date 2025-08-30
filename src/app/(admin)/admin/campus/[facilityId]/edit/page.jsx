@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -13,6 +13,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { toast } from "sonner";
 import { Building, ArrowLeft } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const schema = z.object({
   name: z.string().min(1, "Required"),
@@ -36,6 +46,8 @@ export default function EditFacilityPage() {
   const params = useParams();
   const id = params?.facilityId;
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -63,8 +75,10 @@ export default function EditFacilityPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/${id}`);
       const data = await res.json();
       form.reset(data.data);
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching facility:', error);
+      setLoading(false);
     }
   };
 
@@ -122,7 +136,7 @@ export default function EditFacilityPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={(e) => { e.preventDefault(); setConfirmOpen(true); }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Same fields as Add */}
               {([
                 { name: "name", label: "Facility Name", placeholder: "" },
@@ -224,6 +238,45 @@ export default function EditFacilityPage() {
           </Form>
         </CardContent>
       </Card>
+
+      {/* Skeleton while loading */}
+      {loading && (
+        <div className="space-y-6">
+          <div className="h-6 w-40 bg-muted rounded animate-pulse" />
+          <Card>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Array.from({ length: 16 }).map((_, i) => (
+                  <div key={i} className={i % 6 === 0 ? "md:col-span-2 space-y-2" : "space-y-2"}>
+                    <div className="h-4 w-24 bg-muted/70 rounded animate-pulse" />
+                    <div className="h-10 w-full bg-muted rounded animate-pulse" />
+                  </div>
+                ))}
+                <div className="md:col-span-2 flex items-center justify-end gap-2 pt-2">
+                  <div className="h-10 w-24 bg-muted rounded animate-pulse" />
+                  <div className="h-10 w-28 bg-muted rounded animate-pulse" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Update Confirmation */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Update facility?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will save your changes to the facility. You can’t undo this action.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmOpen(false); form.handleSubmit(onSubmit)(); }}>Confirm Update</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -5,6 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Search,
   Plus,
   Eye,
@@ -25,14 +35,13 @@ import {
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-
 export default function CampusManagement() {
   const [facilities, setFacilities] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
-
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const router = useRouter(); // Fix: Call useRouter() correctly
 
   const getFacilities = async () => {
     try {
@@ -110,12 +119,47 @@ export default function CampusManagement() {
   const availableRooms = facilities.reduce((sum, f) => sum + (f.availableRooms || 0), 0);
   const activeFacilities = facilities.filter(f => f.status === "Active").length;
 
-
   return (
     <>
       {loading ? (
-        <div className="flex items-center justify-center h-screen">
-          <Loader2 className="w-10 h-10 animate-spin" />
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="space-y-2">
+              <div className="h-7 w-48 bg-muted rounded animate-pulse" />
+              <div className="h-4 w-64 bg-muted/70 rounded animate-pulse" />
+            </div>
+            <div className="h-10 w-32 bg-muted rounded animate-pulse" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-6 space-y-3">
+                  <div className="h-5 w-28 bg-muted rounded animate-pulse" />
+                  <div className="h-7 w-20 bg-muted/70 rounded animate-pulse" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i} className="overflow-hidden">
+                <div className="aspect-video bg-muted animate-pulse" />
+                <CardHeader>
+                  <div className="h-5 w-40 bg-muted rounded animate-pulse" />
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {Array.from({ length: 4 }).map((__, j) => (
+                    <div key={j} className="h-4 w-full bg-muted/70 rounded animate-pulse" />
+                  ))}
+                  <div className="flex gap-2 pt-2">
+                    <div className="h-8 flex-1 bg-muted rounded animate-pulse" />
+                    <div className="h-8 w-9 bg-muted rounded animate-pulse" />
+                    <div className="h-8 w-9 bg-muted rounded animate-pulse" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="space-y-6">
@@ -280,7 +324,7 @@ export default function CampusManagement() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDelete(facility._id)}
+                      onClick={() => setConfirmDeleteId(facility._id)}
                       className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="w-3 h-3" />
@@ -396,6 +440,29 @@ export default function CampusManagement() {
               </Card>
             </div>
           )}
-        </div>)} </>
+
+          {/* Delete Confirmation */}
+          <AlertDialog open={!!confirmDeleteId} onOpenChange={(open) => !open && setConfirmDeleteId(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete facility?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the facility and remove its data from our servers.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => {
+                  if (confirmDeleteId) {
+                    handleDelete(confirmDeleteId);
+                    setConfirmDeleteId(null);
+                  }
+                }}>Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )}
+    </>
   );
 }
