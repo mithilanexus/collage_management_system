@@ -1,15 +1,11 @@
-import mongoose,{Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const studentSchema = new mongoose.Schema(
   {
-    studentKey: {
+    studentId: {
       type: String,
       required: true,
       unique: true,
-    }, 
-    parent: {
-      type: Schema.Types.ObjectId,
-      ref: "Parent",
     },
     name: {
       type: String,
@@ -29,8 +25,7 @@ const studentSchema = new mongoose.Schema(
     },
     admissionDate: {
       type: Date,
-      required: false,
-      default: Date.now(),
+      required: true,
     },
     status: {
       type: String,
@@ -55,15 +50,63 @@ const studentSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
-    address: {
-      type: String,
-      required: true,
-    },
-    previousSchool: {
+    fatherName: {
       type: String,
       required: false,
     },
-    slcGpa: {
+    fatherOccupation: {
+      type: String,
+      required: false,
+    },
+    fatherPhone: {
+      type: String,
+      required: false,
+    },
+    motherName: {
+      type: String,
+      required: false,
+    },
+    motherOccupation: {
+      type: String,
+      required: false,
+    },
+    guardianName: {
+      type: String,
+      required: false,
+    },
+    guardianRelation: {
+      type: String,
+      required: false,
+    },
+    guardianPhone: {
+      type: String,
+      required: false,
+    },
+    nationality: {
+      type: String,
+      default: "Nepali",
+    },
+    caste: {
+      type: String,
+      required: false,
+    },
+    religion: {
+      type: String,
+      required: false,
+    },
+    permanentAddress: {
+      type: String,
+      required: false,
+    },
+    temporaryAddress: {
+      type: String,
+      required: false,
+    },
+    district: {
+      type: String,
+      required: false,
+    },
+    province: {
       type: String,
       required: false,
     },
@@ -79,6 +122,39 @@ const studentSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    medicalConditions: {
+      type: String,
+      required: false,
+    },
+    emergencyContact: {
+      type: String,
+      required: false,
+    },
+    emergencyContactRelation: {
+      type: String,
+      required: false,
+    },
+    remarks: {
+      type: String,
+      required: false,
+    },
+    gender: {
+      type: String,
+      required: false,
+    },
+    parent: {
+      type: Schema.Types.ObjectId,
+      ref: "Parent",
+    },
+    previousSchool: {
+      type: String,
+      required: false,
+    },
+    slcGpa: {
+      type: Number,
+      required: false,
+    },
+    
   },
   {
     timestamps: true,

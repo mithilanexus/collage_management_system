@@ -21,24 +21,31 @@ export async function GET() {
 
 export async function POST(request) {
   const req = await request.json();
-  console.log(req);
   try {
-    const studentId = generateStudentId(req.firstName, req.class, req.rollNumber) || `STU${Date.now()}`;
     req.name = `${req.firstName} ${req.lastName}`;
-    req.address = req.permanentAddress;
-    req.studentKey = studentId;
-    req.parentId = "Unassigned";
+    const studentId = generateStudentId(req.name, req.rollNumber) || `STU${Date.now()}`;
+    console.log(studentId)
+    req.studentId = studentId;
+    const student = await StudentModel.findOne({ studentId });
+    if (student) {
+      return Response.json({
+        message: "Student with this ID already exists",
+        success: false,
+      }, { status: 400 });
+    }
     const newStudent = await StudentModel.create(req);
-    return Response.json({
+    const res = {
       message: "Student added successfully",
       success: true,
       data: newStudent,
-    });
+    };
+    return Response.json({ ...res });
   } catch (error) {
-    return Response.json({
+    const res = {
       message: "Failed to add student",
       success: false,
       error: error.message,
-    });
+    };
+    return Response.json({ ...res });
   }
 }

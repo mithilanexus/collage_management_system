@@ -30,6 +30,7 @@ export async function PUT(request, { params }) {
   try {
     const req = await request.json();
     const studentId = params.id;
+    req.name = `${req.firstName} ${req.lastName}`;
 
     const student = await StudentModel.findOneAndUpdate(
       { _id: studentId },

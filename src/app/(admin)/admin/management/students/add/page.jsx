@@ -8,8 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, User } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { toast } from "sonner";
-
+import { Calendar as CalendarIcon } from "lucide-react"
+import { format } from "date-fns"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { DatePicker } from "@/components/DatePicker";
 export default function AddStudent() {
   const [formData, setFormData] = useState({
     // Basic Information
@@ -21,7 +27,7 @@ export default function AddStudent() {
     religion: "",
     nationality: "Nepali",
     bloodGroup: "",
-    
+
     // Contact Information
     phone: "",
     email: "",
@@ -29,30 +35,26 @@ export default function AddStudent() {
     temporaryAddress: "",
     district: "",
     province: "",
-    ward: "",
-    
+
     // Family Information
     fatherName: "",
     fatherOccupation: "",
     fatherPhone: "",
     motherName: "",
     motherOccupation: "",
-    motherPhone: "",
     guardianName: "",
     guardianRelation: "",
     guardianPhone: "",
     guardianOccupation: "",
-    
+
     // Academic Information
     class: "",
     section: "",
     rollNumber: "",
-    admissionDate: "",
+    admissionDate: new Date().toISOString(),
     previousSchool: "",
-    slcBoard: "",
-    slcYear: "",
     slcGpa: "",
-    
+
     // Additional Information
     hostelResident: false,
     transportUser: false,
@@ -70,7 +72,8 @@ export default function AddStudent() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try{
+    console.log(formData);
+    try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/students`,
         {
@@ -82,18 +85,25 @@ export default function AddStudent() {
         }
       );
       const data = await res.json();
+      setTimeout(() => {
+        console.log(data.success)
+        console.log(data)
+      }, 1000)
+
       if (data.success) {
         toast.success("Student added successfully");
         router.push("/admin/management/students");
+      } else {
+        toast.error(data.message || "Failed to add student information");
       }
-    }catch(error){
-      toast.error("Failed to add student information. Please try again.");
+    } catch (error) {
+      toast.error(error.message);
 
     }
   };
 
   const provinces = [
-    "Province No. 1", "Madhesh Province", "Bagmati Province", "Gandaki Province", 
+    "Province No. 1", "Madhesh Province", "Bagmati Province", "Gandaki Province",
     "Lumbini Province", "Karnali Province", "Sudurpashchim Province"
   ];
 
@@ -108,10 +118,10 @@ export default function AddStudent() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
-          onClick={() => window.history.back()}
+          onClick={() => router.back()}
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
@@ -149,29 +159,37 @@ export default function AddStudent() {
                   required
                 />
               </div>
-              <div>
-                <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-                <Input
-                  id="dateOfBirth"
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
-                  required
-                />
-              </div>
+              <DatePicker
+                label="Date of Birth"
+                value={formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined}
+                onChange={(date) =>
+                  handleInputChange("dateOfBirth", date ? date.toISOString() : "")
+                }
+                required
+              />
+
+
               <div>
                 <Label htmlFor="gender">Gender *</Label>
-                <select
-                  className="w-full p-2 border border-border rounded-md"
+                <Select
+                  id="gender"
                   value={formData.gender}
-                  onChange={(e) => handleInputChange("gender", e.target.value)}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, gender: value }))
+                  }
                   required
                 >
-                  <option value="">Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
+                  <SelectTrigger className="w-full p-2 border border-border rounded-md">
+                    {formData.gender || "Select Gender"}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unknown">Select Gender</SelectItem>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+
               </div>
               <div>
                 <Label htmlFor="caste">Caste</Label>
@@ -203,16 +221,23 @@ export default function AddStudent() {
               </div>
               <div>
                 <Label htmlFor="bloodGroup">Blood Group</Label>
-                <select
-                  className="w-full p-2 border border-border rounded-md"
+                <Select
+                  id="bloodGroup"
                   value={formData.bloodGroup}
-                  onChange={(e) => handleInputChange("bloodGroup", e.target.value)}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, bloodGroup: value }))
+                  }
                 >
-                  <option value="">Select Blood Group</option>
-                  {bloodGroups.map((group, index) => (
-                    <option key={index} value={group}>{group}</option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full p-2 border border-border rounded-md">
+                    {formData.bloodGroup || "Select Blood Group"}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unknown">Select Blood Group</SelectItem>
+                    {bloodGroups.map((group, index) => (
+                      <SelectItem key={index} value={group}>{group}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>
@@ -276,17 +301,24 @@ export default function AddStudent() {
               </div>
               <div>
                 <Label htmlFor="province">Province *</Label>
-                <select
-                  className="w-full p-2 border border-border rounded-md"
+                <Select
+                  id="province"
                   value={formData.province}
-                  onChange={(e) => handleInputChange("province", e.target.value)}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, province: value }))
+                  }
                   required
                 >
-                  <option value="">Select Province</option>
-                  {provinces.map((province, index) => (
-                    <option key={index} value={province}>{province}</option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full p-2 border border-border rounded-md">
+                    {formData.province || "Select Province"}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unknown">Select Province</SelectItem>
+                    {provinces.map((province, index) => (
+                      <SelectItem key={index} value={province}>{province}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>
@@ -387,17 +419,24 @@ export default function AddStudent() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="class">Class *</Label>
-                <select
-                  className="w-full p-2 border border-border rounded-md"
+                <Select
+                  id="class"
                   value={formData.class}
-                  onChange={(e) => handleInputChange("class", e.target.value)}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, class: value }))
+                  }
                   required
                 >
-                  <option value="">Select Class</option>
-                  {classes.map((cls, index) => (
-                    <option key={index} value={cls}>{cls}</option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full p-2 border border-border rounded-md">
+                    {formData.class || "Select Class"}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unknown">Select Class</SelectItem>
+                    {classes.map((cls, index) => (
+                      <SelectItem key={index} value={cls}>{cls}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="section">Section *</Label>
@@ -418,16 +457,15 @@ export default function AddStudent() {
                   placeholder="15"
                 />
               </div>
-              <div>
-                <Label htmlFor="admissionDate">Admission Date *</Label>
-                <Input
-                  id="admissionDate"
-                  type="date"
-                  value={formData.admissionDate}
-                  onChange={(e) => handleInputChange("admissionDate", e.target.value)}
-                  required
-                />
-              </div>
+
+              <DatePicker
+                label="Admission Date"
+                value={formData.admissionDate ? new Date(formData.admissionDate) : undefined}
+                onChange={(date) =>
+                  handleInputChange("admissionDate", date ? date.toISOString() : "")
+                }
+              />
+
               <div>
                 <Label htmlFor="previousSchool">Previous School</Label>
                 <Input
@@ -444,6 +482,10 @@ export default function AddStudent() {
                   value={formData.slcGpa}
                   onChange={(e) => handleInputChange("slcGpa", e.target.value)}
                   placeholder="3.85"
+                  min="0"
+                  max="4"
+                  step="0.01"
+                  type="number"
                 />
               </div>
             </div>
@@ -530,10 +572,10 @@ export default function AddStudent() {
 
         {/* Submit Buttons */}
         <div className="flex justify-end gap-4">
-          <Button 
-            type="button" 
+          <Button
+            type="button"
             variant="outline"
-            onClick={() => window.history.back()}
+            onClick={() => router.back()}
           >
             Cancel
           </Button>

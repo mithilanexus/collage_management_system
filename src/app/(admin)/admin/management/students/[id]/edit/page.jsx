@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
+import { DatePicker } from "@/components/DatePicker";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 
 export default function EditStudent() {
   const params = useParams();
@@ -40,8 +42,6 @@ export default function EditStudent() {
     rollNumber: "",
     admissionDate: "",
     previousSchool: "",
-    slcBoard: "",
-    slcYear: "",
     slcGpa: "",
     bloodGroup: "",
     status: "Active",
@@ -67,8 +67,12 @@ export default function EditStudent() {
         `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/students/${params.id}`
       );
       const data = await res.json();
+      data.data.firstName = data.data.name.split(" ")[0];
+      data.data.lastName = data.data.name.split(" ")[1];
+      console.log(data)
       if (data.success) {
         setFormData({ ...data.data });
+
       } else {
         setError(data.message || "Student not found");
         toast.error(data.message || "Failed to fetch student data");
@@ -191,9 +195,7 @@ export default function EditStudent() {
                 <Input
                   id="firstName"
                   value={formData.firstName}
-                  onChange={(e) =>
-                    handleInputChange("firstName", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("firstName", e.target.value)}
                   placeholder="John"
                   required
                 />
@@ -203,9 +205,7 @@ export default function EditStudent() {
                 <Input
                   id="lastName"
                   value={formData.lastName}
-                  onChange={(e) =>
-                    handleInputChange("lastName", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("lastName", e.target.value)}
                   placeholder="Doe"
                   required
                 />
@@ -215,55 +215,55 @@ export default function EditStudent() {
                 <Input
                   id="studentId"
                   value={formData.studentId}
-                  onChange={(e) =>
-                    handleInputChange("studentId", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("studentId", e.target.value)}
                   placeholder="STU2024001"
                   disabled
                 />
               </div>
-              <div>
-                <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-                <Input
-                  id="dateOfBirth"
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={(e) =>
-                    handleInputChange("dateOfBirth", e.target.value)
-                  }
-                  required
-                />
-              </div>
+              <DatePicker
+                label="Date of Birth *"
+                value={formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined}
+                onChange={(date) =>
+                  handleInputChange("dateOfBirth", date ? date.toISOString() : "")
+                }
+                required
+              />
               <div>
                 <Label htmlFor="gender">Gender *</Label>
-                <select
-                  className="w-full p-2 border border-border rounded-md"
+                <Select
+                  id="gender"
                   value={formData.gender}
-                  onChange={(e) => handleInputChange("gender", e.target.value)}
+                  onValueChange={(value) => handleInputChange("gender", value)}
                   required
                 >
-                  <option value="">Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
+                  <SelectTrigger className="w-full p-2 border border-border rounded-md">
+                    {formData.gender || "Select Gender"}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="bloodGroup">Blood Group</Label>
-                <select
-                  className="w-full p-2 border border-border rounded-md"
+                <Select
+                  id="bloodGroup"
                   value={formData.bloodGroup}
-                  onChange={(e) =>
-                    handleInputChange("bloodGroup", e.target.value)
-                  }
+                  onValueChange={(value) => handleInputChange("bloodGroup", value)}
                 >
-                  <option value="">Select Blood Group</option>
-                  {bloodGroups.map((group, index) => (
-                    <option key={index} value={group}>
-                      {group}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full p-2 border border-border rounded-md">
+                    {formData.bloodGroup || "Select Blood Group"}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bloodGroups.map((group, idx) => (
+                      <SelectItem key={idx} value={group}>
+                        {group}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="caste">Caste</Label>
@@ -279,9 +279,7 @@ export default function EditStudent() {
                 <Input
                   id="religion"
                   value={formData.religion}
-                  onChange={(e) =>
-                    handleInputChange("religion", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("religion", e.target.value)}
                   placeholder="Hindu, Buddhist, Christian, etc."
                 />
               </div>
@@ -321,9 +319,7 @@ export default function EditStudent() {
                 <Input
                   id="permanentAddress"
                   value={formData.permanentAddress}
-                  onChange={(e) =>
-                    handleInputChange("permanentAddress", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("permanentAddress", e.target.value)}
                   placeholder="Kathmandu-10, Bagbazar"
                   required
                 />
@@ -333,9 +329,7 @@ export default function EditStudent() {
                 <Input
                   id="temporaryAddress"
                   value={formData.temporaryAddress}
-                  onChange={(e) =>
-                    handleInputChange("temporaryAddress", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("temporaryAddress", e.target.value)}
                   placeholder="Same as permanent address"
                 />
               </div>
@@ -344,30 +338,30 @@ export default function EditStudent() {
                 <Input
                   id="district"
                   value={formData.district}
-                  onChange={(e) =>
-                    handleInputChange("district", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("district", e.target.value)}
                   placeholder="Kathmandu"
                   required
                 />
               </div>
               <div>
                 <Label htmlFor="province">Province *</Label>
-                <select
-                  className="w-full p-2 border border-border rounded-md"
+                <Select
+                  id="province"
                   value={formData.province}
-                  onChange={(e) =>
-                    handleInputChange("province", e.target.value)
-                  }
+                  onValueChange={(value) => handleInputChange("province", value)}
                   required
                 >
-                  <option value="">Select Province</option>
-                  {provinces.map((province, index) => (
-                    <option key={index} value={province}>
-                      {province}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full p-2 border border-border rounded-md">
+                    {formData.province || "Select Province"}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {provinces.map((province, idx) => (
+                      <SelectItem key={idx} value={province}>
+                        {province}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>
@@ -385,9 +379,7 @@ export default function EditStudent() {
                 <Input
                   id="fatherName"
                   value={formData.fatherName}
-                  onChange={(e) =>
-                    handleInputChange("fatherName", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("fatherName", e.target.value)}
                   placeholder="Father's full name"
                   required
                 />
@@ -397,9 +389,7 @@ export default function EditStudent() {
                 <Input
                   id="motherName"
                   value={formData.motherName}
-                  onChange={(e) =>
-                    handleInputChange("motherName", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("motherName", e.target.value)}
                   placeholder="Mother's full name"
                   required
                 />
@@ -409,9 +399,7 @@ export default function EditStudent() {
                 <Input
                   id="guardianName"
                   value={formData.guardianName}
-                  onChange={(e) =>
-                    handleInputChange("guardianName", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("guardianName", e.target.value)}
                   placeholder="If different from parents"
                 />
               </div>
@@ -420,9 +408,7 @@ export default function EditStudent() {
                 <Input
                   id="guardianRelation"
                   value={formData.guardianRelation}
-                  onChange={(e) =>
-                    handleInputChange("guardianRelation", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("guardianRelation", e.target.value)}
                   placeholder="Uncle, Aunt, Brother, etc."
                 />
               </div>
@@ -431,9 +417,7 @@ export default function EditStudent() {
                 <Input
                   id="guardianPhone"
                   value={formData.guardianPhone}
-                  onChange={(e) =>
-                    handleInputChange("guardianPhone", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("guardianPhone", e.target.value)}
                   placeholder="98XXXXXXXX"
                   required
                 />
@@ -443,9 +427,7 @@ export default function EditStudent() {
                 <Input
                   id="guardianOccupation"
                   value={formData.guardianOccupation}
-                  onChange={(e) =>
-                    handleInputChange("guardianOccupation", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("guardianOccupation", e.target.value)}
                   placeholder="Guardian's occupation"
                 />
               </div>
@@ -462,19 +444,23 @@ export default function EditStudent() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="class">Class *</Label>
-                <select
-                  className="w-full p-2 border border-border rounded-md"
+                <Select
+                  id="class"
                   value={formData.class}
-                  onChange={(e) => handleInputChange("class", e.target.value)}
+                  onValueChange={(value) => handleInputChange("class", value)}
                   required
                 >
-                  <option value="">Select Class</option>
-                  {classes.map((cls, index) => (
-                    <option key={index} value={cls}>
-                      {cls}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full p-2 border border-border rounded-md">
+                    {formData.class || "Select Class"}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {classes.map((cls, idx) => (
+                      <SelectItem key={idx} value={cls}>
+                        {cls}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="section">Section *</Label>
@@ -491,32 +477,24 @@ export default function EditStudent() {
                 <Input
                   id="rollNumber"
                   value={formData.rollNumber}
-                  onChange={(e) =>
-                    handleInputChange("rollNumber", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("rollNumber", e.target.value)}
                   placeholder="15"
                 />
               </div>
-              <div>
-                <Label htmlFor="admissionDate">Admission Date *</Label>
-                <Input
-                  id="admissionDate"
-                  type="date"
-                  value={formData.admissionDate}
-                  onChange={(e) =>
-                    handleInputChange("admissionDate", e.target.value)
-                  }
-                  required
-                />
-              </div>
+              <DatePicker
+                label="Admission Date *"
+                value={formData.admissionDate ? new Date(formData.admissionDate) : undefined}
+                onChange={(date) =>
+                  handleInputChange("admissionDate", date ? date.toISOString() : "")
+                }
+                required
+              />
               <div>
                 <Label htmlFor="previousSchool">Previous School</Label>
                 <Input
                   id="previousSchool"
                   value={formData.previousSchool}
-                  onChange={(e) =>
-                    handleInputChange("previousSchool", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("previousSchool", e.target.value)}
                   placeholder="Name of previous school"
                 />
               </div>
@@ -594,10 +572,7 @@ export default function EditStudent() {
                   id="emergencyContactRelation"
                   value={formData.emergencyContactRelation}
                   onChange={(e) =>
-                    handleInputChange(
-                      "emergencyContactRelation",
-                      e.target.value
-                    )
+                    handleInputChange("emergencyContactRelation", e.target.value)
                   }
                   placeholder="Uncle, Aunt, etc."
                 />
@@ -643,6 +618,7 @@ export default function EditStudent() {
           </Button>
         </div>
       </form>
+
     </div>
   );
 }

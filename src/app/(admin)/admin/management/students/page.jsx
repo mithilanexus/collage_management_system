@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import DeleteDialog from "@/components/shared/DeleteDialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function StudentsManagement() {
   const [students, setStudents] = useState([]);
@@ -94,7 +95,7 @@ export default function StudentsManagement() {
         </div>
         <Button
           onClick={() =>
-            (window.location.href = "/admin/management/students/add")
+            (router.push("/admin/management/students/add"))
           }
           className="flex items-center gap-2"
         >
@@ -141,45 +142,55 @@ export default function StudentsManagement() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-4">Student</th>
-                  <th className="text-left p-4">Student ID</th>
-                  <th className="text-left p-4">Class</th>
-                  <th className="text-left p-4">Contact</th>
-                  <th className="text-left p-4">Guardian</th>
-                  <th className="text-left p-4">Status</th>
-                  <th className="text-left p-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Student</TableHead>
+                  <TableHead>Student ID</TableHead>
+                  <TableHead>Class</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Guardian</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filteredStudents.map((student) => (
-                  <tr key={student._id} className="border-b hover:bg-muted/50">
-                    <td className="p-4">
+                  <TableRow
+                    key={student._id}
+                    className="hover:bg-muted/50 transition-colors"
+                  >
+                    {/* Student Info */}
+                    <TableCell>
                       <div>
                         <div className="font-medium">
-                          {student.firstName} {student.lastName}
+                          {student.name}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {student.email}
                         </div>
                       </div>
-                    </td>
-                    <td className="p-4">
+                    </TableCell>
+
+                    {/* Student ID */}
+                    <TableCell>
                       <span className="font-mono text-sm bg-muted px-2 py-1 rounded">
                         {student.studentId}
                       </span>
-                    </td>
-                    <td className="p-4">
+                    </TableCell>
+
+                    {/* Class */}
+                    <TableCell>
                       <div>
                         <div className="font-medium">{student.class}</div>
                         <div className="text-sm text-muted-foreground">
-                          Section {student.section} - Roll {student.rollNumber}
+                          Section {student.section} – Roll {student.rollNumber}
                         </div>
                       </div>
-                    </td>
-                    <td className="p-4">
+                    </TableCell>
+
+                    {/* Contact */}
+                    <TableCell>
                       <div className="flex items-center gap-1 mb-1">
                         <Phone className="w-3 h-3" />
                         <span className="text-sm">{student.phone}</span>
@@ -187,29 +198,32 @@ export default function StudentsManagement() {
                       <div className="text-sm text-muted-foreground">
                         {student.district}
                       </div>
-                    </td>
-                    <td className="p-4">
+                    </TableCell>
+
+                    {/* Guardian */}
+                    <TableCell>
                       <div>
-                        <div className="font-medium text-sm">
-                          {student.guardianName}
-                        </div>
+                        <div className="font-medium text-sm">{student.guardianName}</div>
                         <div className="text-sm text-muted-foreground">
                           {student.guardianRelation}
                         </div>
                       </div>
-                    </td>
-                    <td className="p-4">
+                    </TableCell>
+
+                    {/* Status */}
+                    <TableCell>
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          student.status === "Active"
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${student.status === "Active"
                             ? "bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-300"
                             : "bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-300"
-                        }`}
+                          }`}
                       >
                         {student.status}
                       </span>
-                    </td>
-                    <td className="p-4">
+                    </TableCell>
+
+                    {/* Actions */}
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <Button
                           size="sm"
@@ -225,15 +239,13 @@ export default function StudentsManagement() {
                         >
                           <Edit className="w-3 h-3" />
                         </Button>
-                        <DeleteDialog
-                          handleDelete={() => handleDelete(student._id)}
-                        />
+                        <DeleteDialog handleDelete={() => handleDelete(student._id)} />
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
@@ -254,7 +266,7 @@ export default function StudentsManagement() {
                 <div>
                   <label className="text-sm font-medium">Full Name</label>
                   <p className="text-sm text-muted-foreground">
-                    {selectedStudent.firstName} {selectedStudent.lastName}
+                    {selectedStudent.name}
                   </p>
                 </div>
                 <div>
@@ -360,10 +372,10 @@ export default function StudentsManagement() {
                   </div>
                   <div>
                     <label className="text-sm font-medium">
-                      Guardian Occupation
+                      Guardian Number
                     </label>
                     <p className="text-sm text-muted-foreground">
-                      {selectedStudent.guardianOccupation}
+                      {selectedStudent.guardianPhone}
                     </p>
                   </div>
                 </div>
