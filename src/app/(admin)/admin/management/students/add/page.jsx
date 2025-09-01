@@ -7,14 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, User } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Calendar as CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
 import { DatePicker } from "@/components/DatePicker";
 export default function AddStudent() {
   const [formData, setFormData] = useState({
@@ -65,7 +60,8 @@ export default function AddStudent() {
     remarks: ""
   });
   const router = useRouter()
-
+  const parentId = useSearchParams().get("parent_id");
+  console.log(parentId)
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -81,7 +77,7 @@ export default function AddStudent() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({ ...formData, parentId }),
         }
       );
       const data = await res.json();
@@ -92,7 +88,11 @@ export default function AddStudent() {
 
       if (data.success) {
         toast.success("Student added successfully");
-        router.push("/admin/management/students");
+        if (parentId) {
+          router.push(`/admin/management/parents/${parentId}`);
+        } else {
+          router.push("/admin/management/students");
+        }
       } else {
         toast.error(data.message || "Failed to add student information");
       }

@@ -142,7 +142,7 @@ const studentSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
-    parent: {
+    parentId: {
       type: Schema.Types.ObjectId,
       ref: "Parent",
     },

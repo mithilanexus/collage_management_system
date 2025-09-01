@@ -1,137 +1,91 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  ArrowLeft, 
-  Save, 
+import {
+  ArrowLeft,
+  Save,
   Search,
   UserPlus,
   Users,
   Plus,
   GraduationCap
 } from "lucide-react";
-
-// Mock available students (not assigned to this parent)
-const mockAvailableStudents = [
-  {
-    id: 4,
-    name: "Priya Poudel",
-    studentId: "STU2024004",
-    class: "Grade 11",
-    section: "A",
-    rollNumber: "08",
-    phone: "9841234570",
-    email: "priya.poudel@student.edu.np",
-    address: "Pokhara-15, Lakeside",
-    dateOfBirth: "2007-08-22",
-    bloodGroup: "B+",
-    status: "Active"
-  },
-  {
-    id: 5,
-    name: "Rajesh Gurung",
-    studentId: "STU2024005",
-    class: "Grade 9",
-    section: "B",
-    rollNumber: "12",
-    phone: "9841234571",
-    email: "rajesh.gurung@student.edu.np",
-    address: "Gorkha-5, Arughat",
-    dateOfBirth: "2008-12-10",
-    bloodGroup: "O+",
-    status: "Active"
-  },
-  {
-    id: 6,
-    name: "Suresh Gurung",
-    studentId: "STU2024006",
-    class: "Grade 7",
-    section: "A",
-    rollNumber: "25",
-    phone: "9841234572",
-    email: "suresh.gurung@student.edu.np",
-    address: "Gorkha-5, Arughat",
-    dateOfBirth: "2010-03-15",
-    bloodGroup: "A+",
-    status: "Active"
-  }
-];
+import { toast } from "sonner";
 
 export default function AddStudentToParent() {
   const params = useParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStudents, setSelectedStudents] = useState([]);
-  const [availableStudents, setAvailableStudents] = useState(mockAvailableStudents);
-  const [showNewStudentForm, setShowNewStudentForm] = useState(false);
-  const [newStudentData, setNewStudentData] = useState({
-    name: "",
-    class: "",
-    section: "",
-    rollNumber: "",
-    phone: "",
-    email: "",
-    address: "",
-    dateOfBirth: "",
-    bloodGroup: ""
+  const [availableStudents, setAvailableStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const parentId = params.id;
+
+  const fetchAvailableStudents = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/students`
+      );
+      const data = await res.json();
+
+      const filteredStudentsByParent = data.data.filter(student => {
+        return !student.parentId;
+      });
+
+      setAvailableStudents(filteredStudentsByParent);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching available students:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchAvailableStudents();
+  }, []);
+
+  const filteredStudents = availableStudents.filter(student => {
+    return !student.parentId ||
+      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.class.includes(searchTerm);
   });
 
-  const filteredStudents = availableStudents.filter(student =>
-    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.class.includes(searchTerm)
-  );
-
   const handleStudentSelect = (student) => {
-    if (selectedStudents.find(s => s.id === student.id)) {
-      setSelectedStudents(selectedStudents.filter(s => s.id !== student.id));
+    if (selectedStudents.find(s => s._id === student._id)) {
+      setSelectedStudents(selectedStudents.filter(s => s._id !== student._id));
     } else {
       setSelectedStudents([...selectedStudents, student]);
     }
   };
 
-  const handleNewStudentInputChange = (field, value) => {
-    setNewStudentData(prev => ({ ...prev, [field]: value }));
-  };
 
-  const handleAddNewStudent = () => {
-    if (newStudentData.name && newStudentData.class) {
-      const newStudent = {
-        id: Date.now(),
-        ...newStudentData,
-        studentId: `STU${Date.now()}`,
-        status: "Active",
-        isNew: true
-      };
-      setSelectedStudents([...selectedStudents, newStudent]);
-      setNewStudentData({
-        name: "",
-        class: "",
-        section: "",
-        rollNumber: "",
-        phone: "",
-        email: "",
-        address: "",
-        dateOfBirth: "",
-        bloodGroup: ""
-      });
-      setShowNewStudentForm(false);
+
+  const handleSubmit = async () => {
+    const studentsId = selectedStudents.map(student => student._id);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent/${parentId}/add-student`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(studentsId),
+        }
+      );
+      const data = await res.json();
+      console.log(data);
+      toast.success("Students added successfully!");
+      router.push(`/admin/management/parents/${parentId}`);
+    } catch (error) {
+      console.error("Error adding students:", error);
+      toast.error("Failed to add students!");
     }
-  };
-
-  const handleSubmit = () => {
-    if (selectedStudents.length === 0) {
-      alert("Please select at least one student.");
-      return;
-    }
-
-    console.log("Adding students to parent:", params.id, selectedStudents);
-    alert(`${selectedStudents.length} students added successfully!`);
-    window.location.href = `/admin/management/parents/${params.id}`;
   };
 
   const classes = [
@@ -141,14 +95,21 @@ export default function AddStudentToParent() {
 
   const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
-  return (
+  return loading ? (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    </div>
+  ) : (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
-          onClick={() => window.history.back()}
+          onClick={() => router.back()}
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
@@ -182,10 +143,10 @@ export default function AddStudentToParent() {
                   <p className="text-sm text-muted-foreground">
                     {filteredStudents.length} students found
                   </p>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
-                    onClick={() => setShowNewStudentForm(!showNewStudentForm)}
+                    onClick={() => router.push(`/admin/management/students/add?parent_id=${params.id}`)}
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     New Student
@@ -195,130 +156,17 @@ export default function AddStudentToParent() {
             </CardContent>
           </Card>
 
-          {/* New Student Form */}
-          {showNewStudentForm && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Add New Student</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="newName">Full Name *</Label>
-                    <Input
-                      id="newName"
-                      value={newStudentData.name}
-                      onChange={(e) => handleNewStudentInputChange("name", e.target.value)}
-                      placeholder="Ram Shrestha"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="newClass">Class *</Label>
-                    <select
-                      className="w-full p-2 border border-border rounded-md"
-                      value={newStudentData.class}
-                      onChange={(e) => handleNewStudentInputChange("class", e.target.value)}
-                    >
-                      <option value="">Select Class</option>
-                      {classes.map((cls, index) => (
-                        <option key={index} value={cls}>{cls}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="newSection">Section</Label>
-                    <Input
-                      id="newSection"
-                      value={newStudentData.section}
-                      onChange={(e) => handleNewStudentInputChange("section", e.target.value)}
-                      placeholder="A"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="newRoll">Roll Number</Label>
-                    <Input
-                      id="newRoll"
-                      value={newStudentData.rollNumber}
-                      onChange={(e) => handleNewStudentInputChange("rollNumber", e.target.value)}
-                      placeholder="15"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="newPhone">Phone Number</Label>
-                    <Input
-                      id="newPhone"
-                      value={newStudentData.phone}
-                      onChange={(e) => handleNewStudentInputChange("phone", e.target.value)}
-                      placeholder="98XXXXXXXX"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="newEmail">Email</Label>
-                    <Input
-                      id="newEmail"
-                      type="email"
-                      value={newStudentData.email}
-                      onChange={(e) => handleNewStudentInputChange("email", e.target.value)}
-                      placeholder="student@example.com"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="newDob">Date of Birth</Label>
-                    <Input
-                      id="newDob"
-                      type="date"
-                      value={newStudentData.dateOfBirth}
-                      onChange={(e) => handleNewStudentInputChange("dateOfBirth", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="newBloodGroup">Blood Group</Label>
-                    <select
-                      className="w-full p-2 border border-border rounded-md"
-                      value={newStudentData.bloodGroup}
-                      onChange={(e) => handleNewStudentInputChange("bloodGroup", e.target.value)}
-                    >
-                      <option value="">Select Blood Group</option>
-                      {bloodGroups.map((group, index) => (
-                        <option key={index} value={group}>{group}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="newAddress">Address</Label>
-                    <Input
-                      id="newAddress"
-                      value={newStudentData.address}
-                      onChange={(e) => handleNewStudentInputChange("address", e.target.value)}
-                      placeholder="Kathmandu-10, Bagbazar"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2 mt-4">
-                  <Button variant="outline" onClick={() => setShowNewStudentForm(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleAddNewStudent}>
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Add Student
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Students List */}
           <Card>
             <CardContent className="p-0">
               <div className="space-y-2 p-4">
                 {filteredStudents.map((student) => (
-                  <div 
-                    key={student.id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      selectedStudents.find(s => s.id === student.id)
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:bg-muted/50"
-                    }`}
+                  <div
+                    key={student._id}
+                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${selectedStudents.find(s => s._id === student._id)
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:bg-muted/50"
+                      }`}
                     onClick={() => handleStudentSelect(student)}
                   >
                     <div className="flex items-center justify-between">
@@ -343,7 +191,7 @@ export default function AddStudentToParent() {
                       <p>DOB: {student.dateOfBirth}</p>
                     </div>
                     <div className="mt-2 text-sm text-muted-foreground">
-                      <p>Address: {student.address}</p>
+                      <p>Address: {student.permanentAddress}</p>
                     </div>
                   </div>
                 ))}
@@ -352,8 +200,8 @@ export default function AddStudentToParent() {
                   <div className="text-center py-8">
                     <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">No students found</p>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       className="mt-2"
                       onClick={() => setShowNewStudentForm(true)}
                     >
@@ -368,7 +216,7 @@ export default function AddStudentToParent() {
         </div>
 
         {/* Selected Students */}
-        <div className="space-y-6">
+        <div className="sticky top-0 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -385,7 +233,7 @@ export default function AddStudentToParent() {
               ) : (
                 <div className="space-y-3">
                   {selectedStudents.map((student) => (
-                    <div key={student.id} className="p-3 bg-muted/50 rounded-lg">
+                    <div key={student._id} className="p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
                           <h5 className="font-medium text-sm">{student.name}</h5>
@@ -416,8 +264,8 @@ export default function AddStudentToParent() {
           </Card>
 
           {/* Submit Button */}
-          <div className="space-y-3">
-            <Button 
+          <div className="sticky bottom-0 space-y-3">
+            <Button
               onClick={handleSubmit}
               className="w-full"
               disabled={selectedStudents.length === 0}
@@ -425,7 +273,7 @@ export default function AddStudentToParent() {
               <Save className="w-4 h-4 mr-2" />
               Add Students ({selectedStudents.length})
             </Button>
-            <Button 
+            <Button
               variant="outline"
               onClick={() => window.history.back()}
               className="w-full"

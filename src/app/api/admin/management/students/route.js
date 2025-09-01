@@ -1,4 +1,5 @@
 import StudentModel from "@/models/admin/management/student/Student.model";
+import parentModel from "@/models/parent/Parent.model";
 import { generateStudentId } from "@/utils/getUinqueId";
 
 export async function GET() {
@@ -26,6 +27,7 @@ export async function POST(request) {
     const studentId = generateStudentId(req.name, req.rollNumber) || `STU${Date.now()}`;
     console.log(studentId)
     req.studentId = studentId;
+    req.parentId = req.parentId || null;
     const student = await StudentModel.findOne({ studentId });
     if (student) {
       return Response.json({
@@ -34,6 +36,13 @@ export async function POST(request) {
       }, { status: 400 });
     }
     const newStudent = await StudentModel.create(req);
+    if (req.parentId) {
+      await parentModel.findOneAndUpdate(
+        { _id: req.parentId },
+        { $addToSet: { students: newStudent._id } },
+        { new: true }
+      );
+    }
     const res = {
       message: "Student added successfully",
       success: true,

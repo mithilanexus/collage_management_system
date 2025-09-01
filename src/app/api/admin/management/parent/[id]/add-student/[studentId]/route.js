@@ -1,5 +1,5 @@
 import StudentModel from "@/models/admin/management/student/Student.model";
-import parentModel from "@/models/parent/Parent.model"; 
+import parentModel from "@/models/parent/Parent.model";
 
 export async function POST(request, { params }) {
   try {
@@ -75,10 +75,21 @@ export async function DELETE(request, { params }) {
       },
       { new: true }
     );
+    const student = await StudentModel.findOneAndUpdate(
+      {
+        _id: studentId,
+      },
+      {
+        $set: {
+          parentId: null,
+        },
+      },
+      { new: true }
+    );
     return Response.json({
       message: "Students removed from parent successfully",
       success: true,
-      data: parent,
+      data: { parent, student },
     });
   } catch (error) {
     return Response.json({

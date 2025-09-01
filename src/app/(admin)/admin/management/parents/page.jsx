@@ -210,7 +210,7 @@ export default function ParentsManagement() {
                         <div className="flex items-center gap-1">
                           <Users className="w-4 h-4 text-primary" />
                           <span className="font-medium">
-                            {parent.studentsCount || 0}
+                            {parent.students?.length || 0}
                           </span>
                         </div>
                       </td>

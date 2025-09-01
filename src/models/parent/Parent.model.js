@@ -139,10 +139,6 @@ const parentSchema = new Schema(
         ref: "Student",
       },
     ],
-    studentsCount: {
-      type: Number,
-      default: 0,
-    },
   },
   {
     timestamps: true,
