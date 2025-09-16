@@ -55,6 +55,14 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
       ],
     },
     {
+      title: "Exams", icon: BookOpen,
+      children: [
+        { title: "Manage Exam", href: "/admin/exams" },
+        { title: "Exam Results", href: "/admin/exams/results" },
+        { title: "Exam Attendance", href: "/admin/exams/attendance" },
+      ],
+    },
+    {
       title: "Academic", icon: GraduationCap,
       children: [
         { title: "Grades", href: "/admin/academic/grades" },
@@ -161,8 +169,8 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
                     <button
                       onClick={() => toggleExpanded(item.title)}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${expandedItems[item.title] || item.children.some((child) => isActive(child.href))
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                         } ${!isOpen && "justify-center"}`}
                     >
                       <div className={`flex items-center ${isOpen ? "space-x-3" : ""}`}>
@@ -179,8 +187,8 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
                             href={child.href}
                             onClick={handleNavClick}
                             className={`block px-3 py-1.5 rounded-lg text-xs transition-all duration-200 ${isActive(child.href)
-                                ? "bg-primary/10 text-primary font-medium"
-                                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                              ? "bg-primary/10 text-primary font-medium"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                               }`}
                           >
                             {child.title}
@@ -194,8 +202,8 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
                     href={item.href}
                     onClick={handleNavClick}
                     className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive(item.href, item.exact)
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       } ${!isOpen && "justify-center"}`}
                   >
                     <item.icon className="w-4 h-4 flex-shrink-0" />
