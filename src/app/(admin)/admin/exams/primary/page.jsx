@@ -80,12 +80,29 @@ export default function PrimaryExamSchedules() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Simulate API call - replace with actual endpoint
+        // Fetch real data from API endpoint
         const res = await fetch("/api/admin/exam/add-schedule").catch(() => ({ ok: false }));
         
         if (isMounted) {
-          // Use dummy data for UI development
-          setSchedules(buildDummySchedules());
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && Array.isArray(data.data)) {
+              // Filter for primary level exams and add status calculation
+              const primaryExams = data.data
+                .filter(exam => exam.examLevel === "primary")
+                .map(exam => ({
+                  ...exam,
+                  status: getExamStatusFromDates(exam.startDate, exam.endDate)
+                }));
+              
+              setSchedules(primaryExams.length > 0 ? primaryExams : buildDummySchedules());
+            } else {
+              setSchedules(buildDummySchedules());
+            }
+          } else {
+            // Use dummy data for UI development when API fails
+            setSchedules(buildDummySchedules());
+          }
         }
       } catch (err) {
         console.error(err);
@@ -100,6 +117,17 @@ export default function PrimaryExamSchedules() {
     fetchData();
     return () => { isMounted = false; };
   }, []);
+
+  // Helper function to calculate exam status from dates
+  const getExamStatusFromDates = (startDate, endDate) => {
+    const now = new Date();
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (start > now) return "upcoming";
+    if (start <= now && end >= now) return "ongoing";
+    return "completed";
+  };
 
   // Filter and search schedules
   const filteredSchedules = useMemo(() => {

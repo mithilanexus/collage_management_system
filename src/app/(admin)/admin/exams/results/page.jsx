@@ -121,7 +121,7 @@ export default function ExamResults() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Simulate API calls - replace with actual endpoints
+        // Fetch real data from API endpoints
         const [examRes, studentRes, resultRes] = await Promise.all([
           fetch("/api/admin/exam/add-schedule").catch(() => ({ ok: false })),
           fetch("/api/admin/students").catch(() => ({ ok: false })),
@@ -129,15 +129,42 @@ export default function ExamResults() {
         ]);
 
         if (isMounted) {
-          // Use dummy data for UI development
-          const dummyData = buildDummyData();
-          setExams(dummyData.exams);
-          setStudents(dummyData.students);
-          setResults(dummyData.results);
+          // Try to use real API data, fallback to dummy data if needed
+          let examsData = [];
+          let studentsData = [];
+          let resultsData = [];
+
+          if (examRes.ok) {
+            const examData = await examRes.json();
+            examsData = examData.success ? examData.data : [];
+          }
+
+          if (studentRes.ok) {
+            const studentData = await studentRes.json();
+            studentsData = studentData.success ? studentData.data : [];
+          }
+
+          if (resultRes.ok) {
+            const resultData = await resultRes.json();
+            resultsData = resultData.success ? resultData.data : [];
+          }
+
+          // If no real data available, use dummy data for UI development
+          if (examsData.length === 0 || studentsData.length === 0) {
+            const dummyData = buildDummyData();
+            setExams(examsData.length > 0 ? examsData : dummyData.exams);
+            setStudents(studentsData.length > 0 ? studentsData : dummyData.students);
+            setResults(resultsData.length > 0 ? resultsData : dummyData.results);
+          } else {
+            setExams(examsData);
+            setStudents(studentsData);
+            setResults(resultsData);
+          }
         }
       } catch (err) {
         console.error(err);
         if (isMounted) {
+          // Fallback to dummy data on error
           const dummyData = buildDummyData();
           setExams(dummyData.exams);
           setStudents(dummyData.students);
@@ -237,12 +264,30 @@ export default function ExamResults() {
 
   const handleSaveResult = async (resultData) => {
     try {
-      // Simulate API call
-      toast.success(editingResult ? "Result updated successfully" : "Result added successfully");
-      setIsAddDialogOpen(false);
-      setEditingResult(null);
-      // Refresh data here
+      const method = editingResult ? "PUT" : "POST";
+      const payload = editingResult ? { ...resultData, id: editingResult._id } : resultData;
+      
+      const response = await fetch("/api/admin/exam-results", {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success(editingResult ? "Result updated successfully" : "Result added successfully");
+        setIsAddDialogOpen(false);
+        setEditingResult(null);
+        // Refresh data
+        fetchData();
+      } else {
+        toast.error(data.message || "Failed to save result");
+      }
     } catch (err) {
+      console.error("Error saving result:", err);
       toast.error("Failed to save result");
     }
   };
