@@ -1,21 +1,19 @@
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 import jwt from "jsonwebtoken";
 import { comparePassword } from "@/lib/AuthHandler";
 import { UserModel } from "@/models/user/User.model";
-
 import { serialize } from "cookie";
+import { NextResponse } from "next/server";
 
-import { NextRequest, NextResponse } from "next/server";
-
-export async function GET() {
+export async function GET(request) {
   const res = {
     message: "Hello World",
     success: true,
   };
   const data = res;
 
-  return Response.json({ data });
+  return NextResponse.json({ data });
 }
 
 export async function POST(request) {
@@ -45,7 +43,7 @@ export async function POST(request) {
       verified: user.verified,
     };
     const token = jwt.sign({ ...data }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "2d",
     });
 
     user.verificationToken = token;
@@ -54,9 +52,9 @@ export async function POST(request) {
 
     const cookie = serialize("token", token, {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 3600,
+      maxAge: 60 * 60 * 24 * 2, // 2 days
       path: "/",
     });
 

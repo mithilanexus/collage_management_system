@@ -1,10 +1,9 @@
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 import { hashPassword } from "@/lib/AuthHandler";
 import { UserModel } from "@/models/user/User.model";
 
 import { NextRequest, NextResponse } from "next/server";
-
 export async function GET() {
   const res = {
     message: "Hello World",
