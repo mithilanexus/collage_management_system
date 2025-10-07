@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,55 +23,39 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useTeachers, useDeleteTeacher } from "@/hooks/admin/management";
 
 export default function PrimaryTeachers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [primaryTeachers, setPrimaryTeachers] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(12); 
 
-  useEffect(() => {
-    const fetchPrimaryTeachers = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teachers/primary`);
-        const data = await response.json();
-        setPrimaryTeachers(data.data);
-      } catch (error) {
-        console.error("Error fetching primary teachers:", error);
-      }
-    };
-    fetchPrimaryTeachers();
-  }, []);
- 
-  const filteredTeachers = primaryTeachers.filter(teacher => {
-    const matchesSearch = teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      teacher.englishName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      teacher.subjects.some(subject => subject.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    const matchesFilter = filterStatus === "all" || teacher?.status?.toLowerCase() === filterStatus.toLowerCase();
-
-    return matchesSearch && matchesFilter;
+  const { data, isLoading, isError, error, isFetching } = useTeachers({
+    page,
+    pageSize,
+    search: searchTerm,
+    status: filterStatus,
+    level: "primary",
   });
 
+  const { mutateAsync: deleteTeacher } = useDeleteTeacher();
+
+  const items = data?.items ?? data ?? [];
+  const total = data?.total ?? items.length ?? 0;
+  const filteredTeachers = items 
+
   const stats = {
-    total: primaryTeachers.length,
-    active: primaryTeachers.filter(t => t?.status?.toLowerCase() === "active").length,
-    onLeave: primaryTeachers.filter(t => t?.status?.toLowerCase() === "onleave").length,
-    subjects: [...new Set(primaryTeachers.flatMap(t => t.subjects))].length
+    total: total,
+    active: data?.active ?? 0,
+    onLeave: data?.onLeave ?? 0,
+    subjects: data?.subjects ?? 0,
   };
 
   const handleDelete = async (id) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teachers/primary/${id}`, {
-        method: "DELETE",
-      });
-      const data = await response.json();
-      if (data.success) {
-        toast.success("Teacher deleted successfully");
-        const updatedTeachers = primaryTeachers.filter((teacher) => teacher._id !== id);
-        setPrimaryTeachers(updatedTeachers);
-      } else {
-        throw new Error(data.message);
-      }
+      await deleteTeacher(id);
+      toast.success("Teacher deleted successfully");
     } catch (error) {
       toast.error(error.message);
     }
@@ -206,7 +190,14 @@ export default function PrimaryTeachers() {
 
       {/* Teachers Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredTeachers.map((teacher) => (
+        {isLoading ? (
+          <Card className="col-span-full"><CardContent className="p-6">Loading…</CardContent></Card>
+        ) : isError ? (
+          <Card className="col-span-full"><CardContent className="p-6 text-destructive">{String(error?.message || "Failed to load")}</CardContent></Card>
+        ) : filteredTeachers.length === 0 ? (
+          <Card className="col-span-full"><CardContent className="p-6 text-muted-foreground">No teachers found.</CardContent></Card>
+        ) : (
+        filteredTeachers.map((teacher) => (
           <Card key={teacher._id} className="hover:shadow-lg transition-all duration-300">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
@@ -250,7 +241,7 @@ export default function PrimaryTeachers() {
                 <p className="text-sm font-medium mb-2">Teaching Subjects:</p>
                 <div className="flex flex-wrap gap-1">
                   {teacher.subjects.map((subject, idx) => (
-                    <Badge key={subject._id} variant="secondary" className="text-xs">{subject.name}</Badge>
+                    <Badge key={idx} variant="secondary" className="text-xs">{subject.name}</Badge>
                   ))}
                 </div>
               </div>
@@ -258,7 +249,7 @@ export default function PrimaryTeachers() {
               <div>
                 <p className="text-sm font-medium mb-2">Classes:</p>
                 <div className="flex flex-wrap gap-1">
-                  {teacher.classes.map((cls, idx) => (
+                  {teacher?.classes?.map((cls, idx) => (
                     <Badge key={cls._id} variant="outline" className="text-xs">{cls.fullName}</Badge>
                   ))}
                 </div>
@@ -292,29 +283,17 @@ export default function PrimaryTeachers() {
               </div>
             </CardContent>
           </Card>
-        ))}
+        ))
+        )}
       </div>
 
-      {filteredTeachers.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No teachers found</h3>
-            <p className="text-muted-foreground mb-4">
-              {searchTerm || filterStatus !== "all"
-                ? "Try adjusting your search or filter criteria."
-                : "Get started by adding your first primary teacher."
-              }
-            </p>
-            <Link href="/admin/management/teachers/primary/add">
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Teacher
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      )}
+      {/* Pagination */}
+      <div className="flex gap-2 items-center justify-end">
+        <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>
+        <span className="text-sm">Page {page}</span>
+        <Button size="sm" variant="outline" disabled={filteredTeachers.length < pageSize || page * pageSize >= total} onClick={() => setPage((p) => p + 1)}>Next</Button>
+        {isFetching && <span className="text-xs text-muted-foreground ml-2">Updating…</span>}
+      </div>
     </div>
   );
 }

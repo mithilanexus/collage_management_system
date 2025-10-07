@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useParents, useRemoveStudentFromParent } from "@/hooks/admin/management";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,77 +41,39 @@ import {
 
 export default function ParentDetail() {
   const params = useParams();
-  const [parent, setParent] = useState({});
-  const [filteredStudents, setFilteredStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStudent, setSelectedStudent] = useState(null);
   const parentId = params.id;
 
-  useEffect(() => {
-    // Simulate API call
-    fetchParentData();
-  }, [parentId]);
-  const fetchParentData = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent/${parentId}`
-      );
-      const data = await res.json();
-      setParent({ ...data.data });
-      setFilteredStudents(data.data.students);
+  const { data: parentData, isLoading: loading } = useParents({
+    id: parentId,
+  });
+  const parent = parentData || {};
 
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching parents data:", error);
-    }
-  };
-  // Filter students based on search term
-  useEffect(() => {
-    if (!parent.students) return;
-    console.log(parent.students);
-    const filtered = parent.students?.filter(
-      (student) =>
-        student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.studentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.class?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.section?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.rollNumber?.includes(searchTerm) ||
-        student.phone?.includes(searchTerm) ||
-        student.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredStudents(filtered);
-  }, [searchTerm, parent.students]);
+  const { mutateAsync: removeStudent } = useRemoveStudentFromParent();
 
-  const router = useRouter();
+  const filteredStudents = parent.students?.filter(
+    (student) =>
+      student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.studentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.class?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.section?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.rollNumber?.includes(searchTerm) ||
+      student.phone?.includes(searchTerm) ||
+      student.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
   const handleEdit = () => {
-    // window.location.href = `/admin/management/parents/${params.id}/edit`;
     router.push(`/admin/management/parents/${params.id}/edit`);
   };
 
-
   const handleRemoveStudent = async (studentId) => {
     try {
-      setParent({
-        ...parent,
-        students: parent.students.filter((s) => s._id !== studentId),
-        studentsCount: parent.students.length - 1,
-      });
-      setFilteredStudents(parent.students.filter((s) => s._id !== studentId));
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent/${parentId}/add-student/${studentId}`,
-        {
-          method: "DELETE",
-        }
-      );
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Student removed successfully!");
-      } else {
-        toast.error("Failed to remove student");
-      }
+      await removeStudent({ parentId, studentId });
+      toast.success("Student removed successfully!");
     } catch (error) {
-      toast.error("Failed to remove student");
+      toast.error(error?.message || "Failed to remove student");
     }
   };
 

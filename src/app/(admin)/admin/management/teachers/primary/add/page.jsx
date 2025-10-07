@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useCreateTeacher, useSubjects, useClasses } from "@/hooks/admin/management";
 
 export default function AddPrimaryTeacher() {
   const [formData, setFormData] = useState({
@@ -36,120 +37,100 @@ export default function AddPrimaryTeacher() {
     address: "",
     dateOfBirth: "",
     gender: "",
-    citizenshipNumber: "",
+    citizenship: "",
+    maritalStatus: "",
+    district: "",
+    province: "",
 
     // Professional Information
     qualification: "",
     specialization: "",
     experience: "",
     previousSchool: "",
-    joinDate: "",
+    designation: "",
+    department: "",
+    joiningDate: "",
     employeeId: "",
 
     // Teaching Details
     subjects: [],
     classes: [],
 
-    // Salary Information
-    basicSalary: "",
+    // Salary/Finance Information
+    salary: "",
     allowances: "",
+    panNumber: "",
+    bankAccount: "",
+    bankName: "",
 
     // Additional Information
     emergencyContact: "",
     emergencyPhone: "",
+    emergencyContactRelation: "",
     notes: ""
   });
-  const router = useRouter()
-  const [availableSubjects, setAvailableSubjects] = useState([]);
-  const [availableClasses, setAvailableClasses] = useState([]);
+  const router = useRouter();
   const [selectAllClasses, setSelectAllClasses] = useState(false);
 
+  const { data: subjectsData, isLoading: subjectsLoading } = useSubjects({
+    level: "primary",
+  });
+  const availableSubjects = subjectsData || [];
 
-  const getAvailableSubjects = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/subjects/primary`);
-      const data = await response.json();
-      setAvailableSubjects(data.data);
-    } catch (error) {
-      console.error("Error fetching available subjects:", error);
-    }
-  }
+  const { data: classesData, isLoading: classesLoading } = useClasses({
+    level: "primary",
+  });
+  const availableClasses = classesData || [];
 
-  const getAvailableClasses = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/classes`);
-      const data = await response.json();
-      setAvailableClasses(data.data);
-    } catch (error) {
-      console.error("Error fetching available classes:", error);
-    }
-  }
-
-  useEffect(() => {
-    getAvailableSubjects();
-    getAvailableClasses();
-  }, []);
+  const { mutateAsync: createTeacher } = useCreateTeacher();
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubjectChange = (subjectId, checked) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       subjects: checked
-        ? prev.subjects.includes(subjectId)
-          ? prev.subjects
-          : [...prev.subjects, subjectId]
-        : prev.subjects.filter(s => s !== subjectId)
+        ? [...(prev.subjects || []), subjectId]
+        : (prev.subjects || []).filter((s) => s !== subjectId),
     }));
   };
 
   const handleClassChange = (classId, checked) => {
     setSelectAllClasses(false);
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       classes: checked
-        ? prev.classes.includes(classId)
-          ? prev.classes
-          : [...prev.classes, classId]
-        : prev.classes.filter(c => c !== classId)
+        ? [...(prev.classes || []), classId]
+        : (prev.classes || []).filter((c) => c !== classId),
     }));
+  };
+
+  const handleSelectAllClasses = (e) => {
+    e.preventDefault();
+    setFormData((prev) => ({
+      ...prev,
+      classes: availableClasses.map((cls) => cls._id),
+    }));
+    setSelectAllClasses(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(formData);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teachers/primary`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-      const data = await response.json();
-      if (data.success) {
-        console.log("Teacher added successfully:", data);
-        toast.success("Teacher added successfully");
-        router.push("/admin/management/teachers/primary");
-      } else {
-        throw new Error(data.message);
-      }
+      const payload = {
+        ...formData,
+        // Map to backend-required field names for primary teacher schema
+        basicSalary: formData.salary,
+        joinDate: formData.joiningDate,
+      };
+      await createTeacher(payload);
+      toast.success("Teacher added successfully");
+      router.push("/admin/management/teachers/primary");
     } catch (error) {
       toast.error(error.message);
     }
-  };
-  const handleSelectAllClasses = (e) => {
-    e.preventDefault();
-    setFormData(prev => ({
-      ...prev,
-      classes: availableClasses.map(cls => cls._id)
-    }));
-    setSelectAllClasses(true);
   };
   return (
     <div className="space-y-6">
@@ -239,12 +220,13 @@ export default function AddPrimaryTeacher() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="citizenshipNumber">Citizenship Number</Label>
+                <Label htmlFor="citizenship">Citizenship Number *</Label>
                 <Input
-                  id="citizenshipNumber"
+                  id="citizenship"
                   placeholder="XX-XX-XX-XXXXX"
-                  value={formData.citizenshipNumber}
-                  onChange={(e) => handleInputChange("citizenshipNumber", e.target.value)}
+                  value={formData.citizenship}
+                  onChange={(e) => handleInputChange("citizenship", e.target.value)}
+                  required
                 />
               </div>
             </div>
@@ -264,17 +246,18 @@ export default function AddPrimaryTeacher() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="gender">Gender</Label>
+                <Label htmlFor="gender">Gender *</Label>
                 <select
                   id="gender"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   value={formData.gender}
                   onChange={(e) => handleInputChange("gender", e.target.value)}
+                  required
                 >
                   <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
             </div>
@@ -291,6 +274,54 @@ export default function AddPrimaryTeacher() {
                   onChange={(e) => handleInputChange("address", e.target.value)}
                   required
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="district">District *</Label>
+                <Input
+                  id="district"
+                  placeholder="e.g., Kathmandu"
+                  value={formData.district}
+                  onChange={(e) => handleInputChange("district", e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="province">Province *</Label>
+                <select
+                  id="province"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={formData.province}
+                  onChange={(e) => handleInputChange("province", e.target.value)}
+                  required
+                >
+                  <option value="">Select Province</option>
+                  <option value="Province No. 1">Province No. 1</option>
+                  <option value="Madhesh Province">Madhesh Province</option>
+                  <option value="Bagmati Province">Bagmati Province</option>
+                  <option value="Gandaki Province">Gandaki Province</option>
+                  <option value="Lumbini Province">Lumbini Province</option>
+                  <option value="Karnali Province">Karnali Province</option>
+                  <option value="Sudurpashchim Province">Sudurpashchim Province</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="maritalStatus">Marital Status *</Label>
+                <select
+                  id="maritalStatus"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={formData.maritalStatus}
+                  onChange={(e) => handleInputChange("maritalStatus", e.target.value)}
+                  required
+                >
+                  <option value="">Select Status</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Divorced">Divorced</option>
+                  <option value="Widowed">Widowed</option>
+                </select>
               </div>
             </div>
           </CardContent>
@@ -329,6 +360,29 @@ export default function AddPrimaryTeacher() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label htmlFor="designation">Designation *</Label>
+                <Input
+                  id="designation"
+                  placeholder="e.g., Assistant Teacher"
+                  value={formData.designation}
+                  onChange={(e) => handleInputChange("designation", e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="department">Department *</Label>
+                <Input
+                  id="department"
+                  placeholder="e.g., Primary Department"
+                  value={formData.department}
+                  onChange={(e) => handleInputChange("department", e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label htmlFor="experience">Teaching Experience</Label>
                 <Input
                   id="experience"
@@ -350,12 +404,12 @@ export default function AddPrimaryTeacher() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="joinDate">Joining Date *</Label>
+                <Label htmlFor="joiningDate">Joining Date *</Label>
                 <Input
-                  id="joinDate"
+                  id="joiningDate"
                   type="date"
-                  value={formData.joinDate}
-                  onChange={(e) => handleInputChange("joinDate", e.target.value)}
+                  value={formData.joiningDate}
+                  onChange={(e) => handleInputChange("joiningDate", e.target.value)}
                   required
                 />
               </div>
@@ -448,12 +502,12 @@ export default function AddPrimaryTeacher() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="basicSalary">Basic Salary (Monthly) *</Label>
+                <Label htmlFor="salary">Monthly Salary *</Label>
                 <Input
-                  id="basicSalary"
+                  id="salary"
                   placeholder="e.g., 45000"
-                  value={formData.basicSalary}
-                  onChange={(e) => handleInputChange("basicSalary", e.target.value)}
+                  value={formData.salary}
+                  onChange={(e) => handleInputChange("salary", e.target.value)}
                   required
                 />
               </div>
@@ -464,6 +518,39 @@ export default function AddPrimaryTeacher() {
                   placeholder="e.g., 5000"
                   value={formData.allowances}
                   onChange={(e) => handleInputChange("allowances", e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="panNumber">PAN Number *</Label>
+                <Input
+                  id="panNumber"
+                  placeholder="e.g., 301234567"
+                  value={formData.panNumber}
+                  onChange={(e) => handleInputChange("panNumber", e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bankAccount">Bank Account Number *</Label>
+                <Input
+                  id="bankAccount"
+                  placeholder="Account number"
+                  value={formData.bankAccount}
+                  onChange={(e) => handleInputChange("bankAccount", e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bankName">Bank Name *</Label>
+                <Input
+                  id="bankName"
+                  placeholder="e.g., Nepal Bank Limited"
+                  value={formData.bankName}
+                  onChange={(e) => handleInputChange("bankName", e.target.value)}
+                  required
                 />
               </div>
             </div>
@@ -504,6 +591,16 @@ export default function AddPrimaryTeacher() {
                 placeholder="Any additional information about the teacher"
                 value={formData.notes}
                 onChange={(e) => handleInputChange("notes", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="emergencyContactRelation">Emergency Contact Relation *</Label>
+              <Input
+                id="emergencyContactRelation"
+                placeholder="e.g., Spouse, Parent"
+                value={formData.emergencyContactRelation}
+                onChange={(e) => handleInputChange("emergencyContactRelation", e.target.value)}
+                required
               />
             </div>
           </CardContent>

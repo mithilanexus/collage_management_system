@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useStudents, useAddStudentToParent, useAddStudents } from "@/hooks/admin/management";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,41 +20,17 @@ import { toast } from "sonner";
 
 export default function AddStudentToParent() {
   const params = useParams();
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStudents, setSelectedStudents] = useState([]);
-  const [availableStudents, setAvailableStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
   const parentId = params.id;
 
-  const fetchAvailableStudents = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/students`
-      );
-      const data = await res.json();
+  const { data: studentsData, isLoading: loading } = useAddStudents({ parentId })
+  const availableStudents = studentsData?.filter(student => !student.parentId) || [];
 
-      const filteredStudentsByParent = data.data.filter(student => {
-        return !student.parentId;
-      });
-
-      setAvailableStudents(filteredStudentsByParent);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching available students:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchAvailableStudents();
-  }, []);
-
-  const filteredStudents = availableStudents.filter(student => {
-    return !student.parentId ||
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.class.includes(searchTerm);
-  });
+  const { mutateAsync: addStudentToParent } = useAddStudentToParent(
+    {studentsData,parentId}
+  );
 
   const handleStudentSelect = (student) => {
     if (selectedStudents.find(s => s._id === student._id)) {
@@ -63,37 +40,22 @@ export default function AddStudentToParent() {
     }
   };
 
-
-
   const handleSubmit = async () => {
-    const studentsId = selectedStudents.map(student => student._id);
+    const studentIds = selectedStudents.map(student => student._id);
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent/${parentId}/add-student`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(studentsId),
-        }
-      );
-      const data = await res.json();
-      console.log(data);
+      await addStudentToParent({ parentId, studentIds });
       toast.success("Students added successfully!");
       router.push(`/admin/management/parents/${parentId}`);
     } catch (error) {
-      console.error("Error adding students:", error);
-      toast.error("Failed to add students!");
+      toast.error(error?.message || "Failed to add students!");
     }
   };
 
-  const classes = [
-    "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8",
-    "Grade 9", "Grade 10", "Grade 11", "Grade 12"
-  ];
-
-  const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+  const filteredStudents = availableStudents.filter(student => {
+    return student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.class.includes(searchTerm);
+  });
 
   return loading ? (
     <div className="flex items-center justify-center min-h-[400px]">
@@ -141,7 +103,7 @@ export default function AddStudentToParent() {
 
                 <div className="flex justify-between items-center">
                   <p className="text-sm text-muted-foreground">
-                    {filteredStudents.length} students found
+                    {availableStudents.length} students found
                   </p>
                   <Button
                     variant="outline"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,26 +20,27 @@ import {
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import DeleteDialog from "@/components/shared/DeleteDialog";
+import { useQueryClient } from "@tanstack/react-query";
+import { useStaff, useDeleteStaff } from "@/hooks/admin/management";
 
 export default function StaffManagement() {
-  const [staff, setStaff] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(12);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStaff, setSelectedStaff] = useState(null);
-
-  const filteredStaff = staff.filter(
-    (member) =>
-      member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.phone.includes(searchTerm) ||
-      member.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
   const router = useRouter();
+  const qc = useQueryClient();
 
-  useEffect(() => {
-    fetchStaffsData();
-  }, []);
+  const { data, isLoading, isError, error, isFetching } = useStaff(
+    { page, pageSize, search: searchTerm },
+    { keepPreviousData: true, staleTime: 60_000 }
+  );
+
+  const { mutateAsync: deleteStaff } = useDeleteStaff();
+
+  const items = data?.items ?? data?.data ?? data ?? [];
+  const total = data?.total ?? items?.length ?? 0;
+  const filteredStaff = items;
   const handleView = (member) => {
     setSelectedStaff(member);
   };
@@ -50,31 +51,10 @@ export default function StaffManagement() {
 
   const handleDelete = async (staffId) => {
     try {
-      setStaff(staff.filter((s) => s._id !== staffId));
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/staff/${staffId}`,
-        {
-          method: "DELETE",
-        }
-      );
-      const data = res.json();
-      if (data.success) {
-        toast.success("Staff deleted successfully");
-      }
+      await deleteStaff(staffId);
+      toast.success("Staff deleted successfully");
     } catch (error) {
-      toast.error("Failed to delete staff");
-    }
-  };
-  const fetchStaffsData = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/staff`
-      );
-      const data = await res.json();
-      setStaff([...data.data]);
-    } catch (error) {
-      console.error("Error fetching staff data:", error);
-      toast.error("Failed to fetch staff data");
+      toast.error(error?.message || "Failed to delete staff");
     }
   };
 
@@ -115,7 +95,7 @@ export default function StaffManagement() {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-primary">
-              {staff.length}
+              {items.length}
             </div>
             <div className="text-sm text-muted-foreground">Total Staff</div>
           </CardContent>
@@ -123,7 +103,7 @@ export default function StaffManagement() {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-green-600">
-              {staff.filter((s) => s.status === "Permanent").length}
+              {items.filter((s) => s.status === "Permanent").length}
             </div>
             <div className="text-sm text-muted-foreground">Permanent Staff</div>
           </CardContent>
@@ -150,7 +130,14 @@ export default function StaffManagement() {
                 </tr>
               </thead>
               <tbody>
-                {filteredStaff.map((member) => (
+                {isLoading ? (
+                  <tr><td colSpan="7" className="p-4 text-center">Loading…</td></tr>
+                ) : isError ? (
+                  <tr><td colSpan="7" className="p-4 text-center text-destructive">{String(error?.message || "Failed to load")}</td></tr>
+                ) : filteredStaff.length === 0 ? (
+                  <tr><td colSpan="7" className="p-4 text-center text-muted-foreground">No staff found.</td></tr>
+                ) : (
+                filteredStaff.map((member) => (
                   <tr key={member._id} className="border-b hover:bg-muted/50">
                     <td className="p-4">
                       <div>
@@ -226,12 +213,21 @@ export default function StaffManagement() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                ))
+              )}
               </tbody>
             </table>
           </div>
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      <div className="flex gap-2 items-center justify-end">
+        <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>
+        <span className="text-sm">Page {page}</span>
+        <Button size="sm" variant="outline" disabled={items.length < pageSize || page * pageSize >= total} onClick={() => setPage((p) => p + 1)}>Next</Button>
+        {isFetching && <span className="text-xs text-muted-foreground ml-2">Updating…</span>}
+      </div>
 
       {/* Staff Details Modal */}
       {selectedStaff && (

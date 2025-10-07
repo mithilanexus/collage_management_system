@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTeachers } from "@/hooks/admin/management";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,56 +27,11 @@ import Link from "next/link";
 
 export default function PrimaryTeacherDetails({ params }) {
   const [activeTab, setActiveTab] = useState("overview");
-  
-  // Mock data - in real app, fetch based on params.id
-  const teacherData = {
-    id: "PT001",
-    name: "राम बहादुर श्रेष्ठ",
-    englishName: "Ram Bahadur Shrestha",
-    email: "ram.shrestha@school.edu.np",
-    phone: "+977-9841234567",
-    alternatePhone: "+977-9851234567",
-    address: "Kathmandu-15, Baneshwor",
-    dateOfBirth: "1985-03-15",
-    gender: "Male",
-    citizenshipNumber: "12-34-56-78901",
-    qualification: "Bachelor in Education (B.Ed)",
-    specialization: "Primary Education",
-    experience: "8 years",
-    previousSchool: "Shree Saraswati Primary School",
-    joinDate: "2019-06-15",
-    employeeId: "EMP001",
-    status: "Active",
-    subjects: ["Nepali", "Social Studies"],
-    classes: ["Grade 3", "Grade 4"],
-    basicSalary: "45000",
-    allowances: "5000",
-    totalSalary: "50000",
-    emergencyContact: "सीता श्रेष्ठ",
-    emergencyPhone: "+977-9871234567",
-    notes: "Excellent teacher with strong communication skills",
-    profileImage: "/api/placeholder/200/200",
-    performance: {
-      attendanceRate: "95%",
-      studentSatisfaction: "4.8/5",
-      completedTrainings: 12,
-      upcomingTrainings: 3
-    },
-    recentActivities: [
-      { date: "2024-01-15", activity: "Completed Child Psychology Training" },
-      { date: "2024-01-10", activity: "Parent-Teacher Meeting Conducted" },
-      { date: "2024-01-05", activity: "Monthly Test Papers Evaluated" },
-      { date: "2024-01-01", activity: "New Academic Session Started" }
-    ],
-    schedule: [
-      { day: "Sunday", periods: ["Grade 3 - Nepali", "Grade 4 - Social Studies", "Free Period", "Grade 3 - Nepali"] },
-      { day: "Monday", periods: ["Grade 4 - Social Studies", "Grade 3 - Nepali", "Grade 4 - Nepali", "Free Period"] },
-      { day: "Tuesday", periods: ["Grade 3 - Social Studies", "Free Period", "Grade 4 - Nepali", "Grade 3 - Nepali"] },
-      { day: "Wednesday", periods: ["Grade 4 - Social Studies", "Grade 3 - Nepali", "Free Period", "Grade 4 - Nepali"] },
-      { day: "Thursday", periods: ["Grade 3 - Social Studies", "Grade 4 - Nepali", "Grade 3 - Nepali", "Free Period"] },
-      { day: "Friday", periods: ["Free Period", "Grade 4 - Social Studies", "Grade 3 - Nepali", "Grade 4 - Nepali"] }
-    ]
-  };
+
+  const { data: teacherData, isLoading } = useTeachers({
+    id: params.id,
+    level: "primary",
+  });
 
   const calculateAge = (dateOfBirth) => {
     const today = new Date();

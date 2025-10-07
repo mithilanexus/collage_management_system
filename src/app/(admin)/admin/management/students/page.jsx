@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,30 +21,32 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import DeleteDialog from "@/components/shared/DeleteDialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useQueryClient } from "@tanstack/react-query";
+import { useStudents, useDeleteStudent } from "@/hooks/admin/management";
 
 export default function StudentsManagement() {
-  const [students, setStudents] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(12);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStudent, setSelectedStudent] = useState(null);
   const router = useRouter();
+  const qc = useQueryClient();
 
-  const filteredStudents =
-    students?.filter(
-      (student) =>
-        student.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.studentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.class?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.phone?.includes(searchTerm) ||
-        student.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    ) || [];
+  const { data, isLoading, isError, error, isFetching } = useStudents(
+    { page, pageSize, search: searchTerm },
+    { keepPreviousData: true, staleTime: 60_000 }
+  );
+
+  const { mutateAsync: deleteStudent } = useDeleteStudent();
+
+  const items = data?.items ?? data?.data ?? data ?? [];
+  const total = data?.total ?? items?.length ?? 0;
+
+  const filteredStudents = items;
 
   const handleView = (student) => {
     setSelectedStudent(student);
   };
-  useEffect(() => {
-    fetchStudentsData();
-  }, []);
 
   const handleEdit = (studentId) => {
     router.push(`/admin/management/students/${studentId}/edit`);
@@ -52,32 +54,10 @@ export default function StudentsManagement() {
 
   const handleDelete = async (studentId) => {
     try {
-      setStudents(students.filter((s) => s._id !== studentId));
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/students/${studentId}`,
-        {
-          method: "DELETE",
-        }
-      );
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Student deleted successfully");
-      }
+      await deleteStudent(studentId);
+      toast.success("Student deleted successfully");
     } catch (error) {
-      toast.error("Failed to delete student");
-    }
-  };
-
-  const fetchStudentsData = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/students`
-      );
-      const data = await res.json();
-      setStudents([...data.data]);
-    } catch (error) {
-      console.error("Error fetching students data:", error);
-      toast.error("Failed to fetch students data");
+      toast.error(error?.message || "Failed to delete student");
     }
   };
 
@@ -120,7 +100,7 @@ export default function StudentsManagement() {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-primary">
-              {students.length}
+              {items.length}
             </div>
             <div className="text-sm text-muted-foreground">Total Students</div>
           </CardContent>
@@ -128,7 +108,7 @@ export default function StudentsManagement() {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-green-600">
-              {students.filter((s) => s.status === "Active").length}
+              {items.filter((s) => s.status === "Active").length}
             </div>
             <div className="text-sm text-muted-foreground">Active Students</div>
           </CardContent>
@@ -155,100 +135,121 @@ export default function StudentsManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredStudents.map((student) => (
-                  <TableRow
-                    key={student._id}
-                    className="hover:bg-muted/50 transition-colors"
-                  >
-                    {/* Student Info */}
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">
-                          {student.name}
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7}>Loading…</TableCell>
+                  </TableRow>
+                ) : isError ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-destructive">{String(error?.message || "Failed to load")}</TableCell>
+                  </TableRow>
+                ) : filteredStudents.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-muted-foreground">No students found.</TableCell>
+                  </TableRow>
+                ) : (
+                  filteredStudents.map((student) => (
+                    <TableRow
+                      key={student._id}
+                      className="hover:bg-muted/50 transition-colors"
+                    >
+                      {/* Student Info */}
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">
+                            {student.name || [student.firstName, student.lastName].filter(Boolean).join(" ") || "Unnamed"}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {student.email || ""}
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      {/* Student ID */}
+                      <TableCell>
+                        <span className="font-mono text-sm bg-muted px-2 py-1 rounded">
+                          {student.studentId || student.rollNumber || "-"}
+                        </span>
+                      </TableCell>
+
+                      {/* Class */}
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{student.class || student.className || student.classGrade || "-"}</div>
+                          <div className="text-sm text-muted-foreground">
+                            Section {student.section || "-"} – Roll {student.rollNumber || "-"}
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        <div className="flex items-center gap-1 mb-1">
+                          <Phone className="w-3 h-3" />
+                          <span className="text-sm">{student.phone || "-"}</span>
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {student.email}
+                          {student.district || "-"}
                         </div>
-                      </div>
-                    </TableCell>
+                      </TableCell>
 
-                    {/* Student ID */}
-                    <TableCell>
-                      <span className="font-mono text-sm bg-muted px-2 py-1 rounded">
-                        {student.studentId}
-                      </span>
-                    </TableCell>
-
-                    {/* Class */}
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{student.class}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Section {student.section} – Roll {student.rollNumber}
+                      {/* Guardian */}
+                      <TableCell>
+                        <div>
+                          <div className="font-medium text-sm">{student.guardianName || student.fatherName || student.motherName || "-"}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {student.guardianRelation || ""}
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
+                      </TableCell>
 
-                    {/* Contact */}
-                    <TableCell>
-                      <div className="flex items-center gap-1 mb-1">
-                        <Phone className="w-3 h-3" />
-                        <span className="text-sm">{student.phone}</span>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {student.district}
-                      </div>
-                    </TableCell>
-
-                    {/* Guardian */}
-                    <TableCell>
-                      <div>
-                        <div className="font-medium text-sm">{student.guardianName}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {student.guardianRelation}
-                        </div>
-                      </div>
-                    </TableCell>
-
-                    {/* Status */}
-                    <TableCell>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${student.status === "Active"
+                      {/* Status */}
+                      <TableCell>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${student.status === "Active"
                             ? "bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-300"
                             : "bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-300"
-                          }`}
-                      >
-                        {student.status}
-                      </span>
-                    </TableCell>
+                            }`}
+                        >
+                          {student.status}
+                        </span>
+                      </TableCell>
 
-                    {/* Actions */}
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleView(student)}
-                        >
-                          <Eye className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEdit(student._id)}
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                        <DeleteDialog handleDelete={() => handleDelete(student._id)} />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      {/* Actions */}
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleView(student)}
+                          >
+                            <Eye className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEdit(student._id)}
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                          <DeleteDialog handleDelete={() => handleDelete(student._id)} />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      <div className="flex gap-2 items-center justify-end">
+        <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>
+        <span className="text-sm">Page {page}</span>
+        <Button size="sm" variant="outline" disabled={items.length < pageSize || page * pageSize >= total} onClick={() => setPage((p) => p + 1)}>Next</Button>
+        {isFetching && <span className="text-xs text-muted-foreground ml-2">Updating…</span>}
+      </div>
 
       {/* Student Details Modal */}
       {selectedStudent && (

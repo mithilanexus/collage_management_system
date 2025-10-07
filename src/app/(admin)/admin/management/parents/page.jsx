@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { useParents, useDeleteParent } from "@/hooks/admin/management";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,48 +33,37 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function ParentsManagement() {
-  const [parents, setParents] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(12);
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
+  const qc = useQueryClient();
 
-  useEffect(() => {
-    fetchParentsData();
-  }, []);
-
-  const filteredParents = parents.filter(
-    (parent) =>
-      parent.fatherName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      parent.motherName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      parent.fatherPhone.includes(searchTerm) ||
-      parent.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const { data, isLoading, isError, error, isFetching } = useParents(
+    { page, pageSize, search: searchTerm },
+    { keepPreviousData: true, staleTime: 60_000 }
   );
 
+  const { mutateAsync: deleteParent } = useDeleteParent();
+
+  const items = data?.items ?? data?.data ?? data ?? [];
+  const total = data?.total ?? items?.length ?? 0;
+  const filteredParents = items;
+
   const handleView = (parent) => {
-    // Redirect to parent detail page for better UX
-    // window.location.href = `/admin/management/parents/${parent.id}`;
     router.push(`/admin/management/parents/${parent._id}`);
   };
 
   const handleEdit = (parentId) => {
-    // window.location.href = `/admin/management/parents/${parentId}/edit`;
     router.push(`/admin/management/parents/${parentId}/edit`);
   };
 
   const handleDelete = async (parentId) => {
-    setParents(parents.filter((p) => p._id !== parentId));
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent/${parentId}`,
-        {
-          method: "DELETE",
-        }
-      );
-      if (res.ok) {
-        toast.success("Parent deleted successfully");
-      }
+      await deleteParent(parentId);
+      toast.success("Parent deleted successfully");
     } catch (error) {
-      console.error("Error deleting parent:", error);
-      toast.error("Failed to delete parent");
+      toast.error(error?.message || "Failed to delete parent");
     }
   };
 
@@ -80,18 +71,6 @@ export default function ParentsManagement() {
     router.push(`/admin/management/parents/${parentId}`);
   };
 
-  const fetchParentsData = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent`
-      );
-      const data = await res.json();
-      setParents([...data.data]);
-      console.log(parents);
-    } catch (error) {
-      console.error("Error fetching parents data:", error);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -130,7 +109,7 @@ export default function ParentsManagement() {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-primary">
-              {parents.length}
+              {items.length}
             </div>
             <div className="text-sm text-muted-foreground">Total Parents</div>
           </CardContent>
@@ -143,7 +122,11 @@ export default function ParentsManagement() {
           <CardTitle>Parents List</CardTitle>
         </CardHeader>
         <CardContent>
-          {parents.length === 0 ? (
+          {isLoading ? (
+            <div className="p-4 text-center">Loading…</div>
+          ) : isError ? (
+            <div className="p-4 text-center text-destructive">{String(error?.message || "Failed to load")}</div>
+          ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center space-y-3">
               <UserPlus className="w-12 h-12 text-muted-foreground/50" />
               <div className="text-xl font-medium text-muted-foreground">
@@ -282,6 +265,14 @@ export default function ParentsManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      <div className="flex gap-2 items-center justify-end">
+        <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>
+        <span className="text-sm">Page {page}</span>
+        <Button size="sm" variant="outline" disabled={items.length < pageSize || page * pageSize >= total} onClick={() => setPage((p) => p + 1)}>Next</Button>
+        {isFetching && <span className="text-xs text-muted-foreground ml-2">Updating…</span>}
+      </div>
     </div>
   );
 }

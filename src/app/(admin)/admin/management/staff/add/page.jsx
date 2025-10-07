@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, UserCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useCreateStaff } from "@/hooks/admin/management";
 
 export default function AddStaff() {
   const [formData, setFormData] = useState({
@@ -50,31 +51,21 @@ export default function AddStaff() {
     remarks: "",
   });
 
+  const router = useRouter();
+  const { mutateAsync: createStaff, isLoading } = useCreateStaff();
+
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
-  const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/staff`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Staff added successfully");
-        router.push("/admin/management/staff");
-      }
+      await createStaff(formData);
+      toast.success("Staff added successfully");
+      router.push("/admin/management/staff");
     } catch (error) {
-      toast.error("Failed to add staff information. Please try again.");
+      toast.error(error?.message || "Failed to add staff information. Please try again.");
     }
   };
 
@@ -534,9 +525,9 @@ export default function AddStaff() {
           >
             Cancel
           </Button>
-          <Button type="submit" className="flex items-center gap-2">
+          <Button type="submit" className="flex items-center gap-2" disabled={isLoading}>
             <Save className="w-4 h-4" />
-            Save Staff
+            {isLoading ? "Saving..." : "Save Staff"}
           </Button>
         </div>
       </form>

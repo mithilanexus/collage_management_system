@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useCreateTeacher } from "@/hooks/admin/management";
 
 export default function AddTeacher() {
   const [formData, setFormData] = useState({
@@ -50,31 +51,20 @@ export default function AddTeacher() {
   });
 
   const router = useRouter();
+  const { mutateAsync: createTeacher } = useCreateTeacher();
+
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teacher`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Teacher added successfully");
-        router.push("/admin/management/teachers");
-      }
+      await createTeacher(formData);
+      toast.success("Teacher added successfully");
+      router.push("/admin/management/teachers");
     } catch (error) {
-      toast.error("Failed to add teacher information. Please try again.");
+      toast.error(error?.message || "Failed to add teacher information. Please try again.");
     }
   };
 

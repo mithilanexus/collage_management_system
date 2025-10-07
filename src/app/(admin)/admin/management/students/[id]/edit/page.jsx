@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useStudents, useUpdateStudent } from "@/hooks/admin/management";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,99 +15,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 
 export default function EditStudent() {
   const params = useParams();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    studentId: "",
-    fatherName: "",
-    motherName: "",
-    dateOfBirth: "",
-    gender: "",
-    caste: "",
-    religion: "",
-    nationality: "Nepali",
-    phone: "",
-    email: "",
-    permanentAddress: "",
-    temporaryAddress: "",
-    district: "",
-    province: "",
-    guardianName: "",
-    guardianRelation: "",
-    guardianPhone: "",
-    guardianOccupation: "",
-    class: "",
-    section: "",
-    rollNumber: "",
-    admissionDate: "",
-    previousSchool: "",
-    slcGpa: "",
-    bloodGroup: "",
-    status: "Active",
-    hostelResident: false,
-    transportUser: false,
-    scholarshipHolder: false,
-    medicalConditions: "",
-    emergencyContact: "",
-    emergencyContactRelation: "",
-    remarks: "",
-  });
   const router = useRouter();
+  const [formData, setFormData] = useState({});
+
+  const { data: studentData, isLoading: loading, isError, error } = useStudents({
+    id: params.id,
+  });
+
+  const { mutateAsync: updateStudent } = useUpdateStudent();
+
   useEffect(() => {
-    fetchStudentData();
-  }, [params.id]);
+    if (studentData) {
+      setFormData(studentData);
+    }
+  }, [studentData]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-  const fetchStudentData = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/students/${params.id}`
-      );
-      const data = await res.json();
-      data.data.firstName = data.data.name.split(" ")[0];
-      data.data.lastName = data.data.name.split(" ")[1];
-      console.log(data)
-      if (data.success) {
-        setFormData({ ...data.data });
-
-      } else {
-        setError(data.message || "Student not found");
-        toast.error(data.message || "Failed to fetch student data");
-      }
-      setLoading(false);
-    } catch (error) {
-      setError("Failed to fetch student data");
-      toast.error("Failed to fetch student data");
-      setLoading(false);
-    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/students/${params.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Student updated successfully");
-        router.push("/admin/management/students");
-      } else {
-        toast.error(data.message || "Failed to update student information");
-      }
+      await updateStudent({ studentId: params.id, payload: formData });
+      toast.success("Student updated successfully");
+      router.push("/admin/management/students");
     } catch (error) {
-      toast.error("Failed to update student information. Please try again.");
+      toast.error(error?.message || "Failed to update student information. Please try again.");
     }
   };
 

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useCreateParent } from "@/hooks/admin/management";
 
 export default function AddParent() {
   const [formData, setFormData] = useState({
@@ -58,6 +59,7 @@ export default function AddParent() {
   });
 
   const router = useRouter();
+  const { mutateAsync: createParent, isLoading } = useCreateParent();
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -65,26 +67,12 @@ export default function AddParent() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const newParentData = {
-      ...formData,
-    };
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/parent`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newParentData),
-      }
-    );
-    if (res.ok) {
-      const data = await res.json();
+    try {
+      await createParent(formData);
       router.push(`/admin/management/parents`);
       toast.success("Parent added successfully");
-    } else {
-      toast.error("Failed to add parent information. Please try again.");
+    } catch (error) {
+      toast.error(error?.message || "Failed to add parent information. Please try again.");
     }
   };
 
@@ -433,9 +421,9 @@ export default function AddParent() {
           >
             Cancel
           </Button>
-          <Button type="submit" className="flex items-center gap-2">
+          <Button type="submit" className="flex items-center gap-2" disabled={isLoading}>
             <Save className="w-4 h-4" />
-            Save Parent
+            {isLoading ? "Saving..." : "Save Parent"}
           </Button>
         </div>
       </form>

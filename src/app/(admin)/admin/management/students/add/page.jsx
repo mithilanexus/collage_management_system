@@ -71,7 +71,7 @@ export default function AddStudent() {
     console.log(formData);
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/students`,
+        `/api/admin/management/students`,
         {
           method: "POST",
           headers: {

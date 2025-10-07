@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useStaff, useUpdateStaff } from "@/hooks/admin/management";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,78 +15,33 @@ import { toast } from "sonner";
 
 export default function EditStaff() {
   const params = useParams();
-  const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({
-    name: "",
-    employeeId: "",
-    designation: "",
-    department: "",
-    qualification: "",
-    experience: "",
-    phone: "",
-    email: "",
-    address: "",
-    district: "",
-    province: "",
-    joiningDate: "",
-    salary: "",
-    workingHours: "",
-    status: "",
-    duties: "",
-    dateOfBirth: "",
-    gender: "",
-    bloodGroup: "",
-    maritalStatus: "",
-    citizenship: "",
-    panNumber: "",
-    emergencyContact: "",
-    emergencyContactRelation: "",
-    bankAccount: "",
-    bankName: "",
-    remarks: "",
+  const router = useRouter();
+  const [formData, setFormData] = useState({});
+
+  const { data: staffData, isLoading: loading } = useStaff({
+    id: params.id,
   });
 
+  const { mutateAsync: updateStaff } = useUpdateStaff();
+
   useEffect(() => {
-    fetchStaffData();
-  }, [params.id]);
+    if (staffData) {
+      setFormData(staffData);
+    }
+  }, [staffData]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
-  const router = useRouter();
 
-  const fetchStaffData = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/staff/${params.id}`
-      );
-      const data = await res.json();
-      setFormData({ ...data.data });
-      setLoading(false);
-    } catch (error) {
-      toast.error("Failed to fetch staff data");
-    }
-  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/staff/${params.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Staff updated successfully");
-        router.push("/admin/management/staff");
-      }
+      await updateStaff({ staffId: params.id, payload: formData });
+      toast.success("Staff updated successfully");
+      router.push("/admin/management/staff");
     } catch (error) {
-      toast.error("Failed to update staff information");
+      toast.error(error?.message || "Failed to update staff information");
     }
   };
 

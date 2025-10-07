@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTeachers, useUpdateTeacher } from "@/hooks/admin/management";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,58 +13,20 @@ import { toast } from "sonner";
 
 export default function EditTeacher() {
   const params = useParams();
-  const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({
-    name: "",
-    employeeId: "",
-    designation: "",
-    department: "",
-    qualification: "",
-    experience: "",
-    phone: "",
-    email: "",
-    address: "",
-    district: "",
-    province: "",
-    joiningDate: "",
-    salary: "",
-    subjects: "",
-    status: "",
-    dateOfBirth: "",
-    gender: "",
-    bloodGroup: "",
-    maritalStatus: "",
-    citizenship: "",
-    panNumber: "",
-    emergencyContact: "",
-    emergencyContactRelation: "",
-    bankAccount: "",
-    bankName: "",
-    remarks: "",
-  });
   const router = useRouter();
-  useEffect(() => {
-    // Simulate API call to fetch teacher data
+  const [formData, setFormData] = useState({});
 
-    fetchTeacherData();
-  }, [params.id]);
-  const fetchTeacherData = async () => {
-    const teacherId = params.id;
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teacher/${teacherId}`
-      );
-      const data = await res.json();
-      setFormData({ ...data.data });
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching teacher data:", error);
-      toast.error("Failed to fetch teacher data", {
-        description: "Please try again later",
-        duration: 3000,
-      });
+  const { data: teacherData, isLoading: loading } = useTeachers({
+    id: params.id,
+  });
+
+  const { mutateAsync: updateTeacher } = useUpdateTeacher();
+
+  useEffect(() => {
+    if (teacherData) {
+      setFormData(teacherData);
     }
-  };
+  }, [teacherData]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -71,27 +34,12 @@ export default function EditTeacher() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teacher/${params.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Teacher updated successfully");
-        router.back();
-      }
+      await updateTeacher({ teacherId: params.id, payload: formData });
+      toast.success("Teacher updated successfully");
+      router.back();
     } catch (error) {
-      toast.error("Failed to update teacher information. Please try again.", {
-        duration: 3000,
-      });
+      toast.error(error?.message || "Failed to update teacher information. Please try again.");
     }
   };
 

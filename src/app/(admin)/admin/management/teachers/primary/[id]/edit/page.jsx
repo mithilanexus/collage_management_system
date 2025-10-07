@@ -22,139 +22,71 @@ import {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTeachers, useUpdateTeacher, useSubjects, useClasses } from "@/hooks/admin/management";
 
 export default function EditPrimaryTeacher() {
-  const [formData, setFormData] = useState({
-    nepaliName: "",
-    name: "",
-    email: "",
-    phone: "",
-    alternatePhone: "",
-    address: "",
-    dateOfBirth: "",
-    gender: "",
-    citizenshipNumber: "",
-    qualification: "",
-    specialization: "",
-    experience: "",
-    previousSchool: "",
-    joinDate: "",
-    employeeId: "",
-    subjects: [],
-    classes: [],
-    basicSalary: "",
-    allowances: "",
-    emergencyContact: "",
-    emergencyPhone: "",
-    notes: "",
-    status: "Active"
-  });
   const params = useParams();
   const router = useRouter();
-  const [availableSubjects, setAvailableSubjects] = useState([]);
-  const [availableClasses, setAvailableClasses] = useState([]);
+  const [formData, setFormData] = useState({});
+
+  const { data: teacherData, isLoading: teacherLoading } = useTeachers({
+    id: params.id,
+    level: "primary",
+  });
+
+  const { data: subjectsData, isLoading: subjectsLoading } = useSubjects({
+    level: "primary",
+  });
+  const availableSubjects = subjectsData || [];
+
+  const { data: classesData, isLoading: classesLoading } = useClasses({
+    level: "primary",
+  });
+  const availableClasses = classesData || [];
+
+  const { mutateAsync: updateTeacher } = useUpdateTeacher();
 
   useEffect(() => {
-    const fetchTeacher = async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teachers/primary/${params.id}`
-        );
-        const data = await res.json();
-        setFormData(data.data);
-      } catch (error) {
-        console.error("Error fetching teacher:", error);
-        toast.error("Failed to fetch teacher data");
-      }
-    };
-    fetchTeacher();
-  }, [params.id]);
-
-  useEffect(() => {
-    const fetchAvailableSubjects = async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/subjects/primary`
-        );
-        const data = await res.json();
-        setAvailableSubjects(data.data);
-      } catch (error) {
-        console.error("Error fetching available subjects:", error);
-      }
-    };
-    fetchAvailableSubjects();
-
-    const fetchAvailableClasses = async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/classes`
-        );
-        const data = await res.json();
-        setAvailableClasses(data.data);
-      } catch (error) {
-        console.error("Error fetching available classes:", error);
-      }
-    };
-    fetchAvailableClasses();
-  }, []);
+    if (teacherData) {
+      setFormData(teacherData);
+    }
+  }, [teacherData]);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubjectChange = (subjectId, checked) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       subjects: checked
-        ? prev.subjects.includes(subjectId)
-          ? prev.subjects
-          : [...prev.subjects, subjectId]
-        : prev.subjects.filter(s => s !== subjectId)
+        ? [...(prev.subjects || []), subjectId]
+        : (prev.subjects || []).filter((s) => s !== subjectId),
     }));
   };
 
   const handleClassChange = (classId, checked) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       classes: checked
-        ? prev.classes.includes(classId)
-          ? prev.classes
-          : [...prev.classes, classId]
-        : prev.classes.filter(c => c !== classId)
+        ? [...(prev.classes || []), classId]
+        : (prev.classes || []).filter((c) => c !== classId),
     }));
   };
 
   const handleSelectAllClasses = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      classes: availableClasses.map(cls => cls._id)
+      classes: availableClasses.map((cls) => cls._id),
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form updated:", formData);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teachers/primary/${params.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-      const data = await response.json();
-      if (data.success) {
-        toast.success("Teacher updated successfully");
-        router.push(`/admin/management/teachers/primary`);
-      } else {
-        throw new Error(data.message);
-      }
+      await updateTeacher({ teacherId: params.id, payload: formData });
+      toast.success("Teacher updated successfully");
+      router.push(`/admin/management/teachers/primary`);
     } catch (error) {
       toast.error(error.message);
     }
@@ -244,12 +176,13 @@ export default function EditPrimaryTeacher() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="citizenshipNumber">Citizenship Number</Label>
+                <Label htmlFor="citizenship">Citizenship Number *</Label>
                 <Input
-                  id="citizenshipNumber"
+                  id="citizenship"
                   placeholder="XX-XX-XX-XXXXX"
-                  value={formData.citizenshipNumber || ""}
-                  onChange={(e) => handleInputChange("citizenshipNumber", e.target.value)}
+                  value={formData.citizenship || ""}
+                  onChange={(e) => handleInputChange("citizenship", e.target.value)}
+                  required
                 />
               </div>
             </div>
@@ -268,17 +201,18 @@ export default function EditPrimaryTeacher() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="gender">Gender</Label>
+                <Label htmlFor="gender">Gender *</Label>
                 <select
                   id="gender"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   value={formData.gender || ""}
                   onChange={(e) => handleInputChange("gender", e.target.value)}
+                  required
                 >
                   <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
             </div>
@@ -294,6 +228,54 @@ export default function EditPrimaryTeacher() {
                   onChange={(e) => handleInputChange("address", e.target.value)}
                   required
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="district">District *</Label>
+                <Input
+                  id="district"
+                  placeholder="e.g., Kathmandu"
+                  value={formData.district || ""}
+                  onChange={(e) => handleInputChange("district", e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="province">Province *</Label>
+                <select
+                  id="province"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={formData.province || ""}
+                  onChange={(e) => handleInputChange("province", e.target.value)}
+                  required
+                >
+                  <option value="">Select Province</option>
+                  <option value="Province No. 1">Province No. 1</option>
+                  <option value="Madhesh Province">Madhesh Province</option>
+                  <option value="Bagmati Province">Bagmati Province</option>
+                  <option value="Gandaki Province">Gandaki Province</option>
+                  <option value="Lumbini Province">Lumbini Province</option>
+                  <option value="Karnali Province">Karnali Province</option>
+                  <option value="Sudurpashchim Province">Sudurpashchim Province</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="maritalStatus">Marital Status *</Label>
+                <select
+                  id="maritalStatus"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={formData.maritalStatus || ""}
+                  onChange={(e) => handleInputChange("maritalStatus", e.target.value)}
+                  required
+                >
+                  <option value="">Select Status</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Divorced">Divorced</option>
+                  <option value="Widowed">Widowed</option>
+                </select>
               </div>
             </div>
           </CardContent>
@@ -324,6 +306,28 @@ export default function EditPrimaryTeacher() {
                   placeholder="e.g., Primary Education, Mathematics"
                   value={formData.specialization || ""}
                   onChange={(e) => handleInputChange("specialization", e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="designation">Designation *</Label>
+                <Input
+                  id="designation"
+                  placeholder="e.g., Assistant Teacher"
+                  value={formData.designation || ""}
+                  onChange={(e) => handleInputChange("designation", e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="department">Department *</Label>
+                <Input
+                  id="department"
+                  placeholder="e.g., Primary Department"
+                  value={formData.department || ""}
+                  onChange={(e) => handleInputChange("department", e.target.value)}
+                  required
                 />
               </div>
             </div>
@@ -401,7 +405,7 @@ export default function EditPrimaryTeacher() {
                   <div key={subject._id} className="flex items-center space-x-2">
                     <Checkbox
                       id={`subject-${subject._id}`}
-                      checked={formData.subjects.includes(subject._id)}
+                      checked={formData.subjects?.includes(subject._id)}
                       onCheckedChange={(checked) => handleSubjectChange(subject._id, checked)}
                     />
                     <Label htmlFor={`subject-${subject._id}`} className="text-sm">{subject.name}</Label>
@@ -432,7 +436,7 @@ export default function EditPrimaryTeacher() {
                   <div key={cls._id} className="flex items-center space-x-2">
                     <Checkbox
                       id={`class-${cls._id}`}
-                      checked={formData.classes.includes(cls._id)}
+                      checked={formData.classes?.includes(cls._id)}
                       onCheckedChange={(checked) => handleClassChange(cls._id, checked)}
                     />
                     <Label htmlFor={`class-${cls._id}`} className="text-sm">{cls.fullName}</Label>
@@ -471,6 +475,38 @@ export default function EditPrimaryTeacher() {
                 />
               </div>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="panNumber">PAN Number *</Label>
+                <Input
+                  id="panNumber"
+                  placeholder="e.g., 301234567"
+                  value={formData.panNumber || ""}
+                  onChange={(e) => handleInputChange("panNumber", e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bankAccount">Bank Account Number *</Label>
+                <Input
+                  id="bankAccount"
+                  placeholder="Account number"
+                  value={formData.bankAccount || ""}
+                  onChange={(e) => handleInputChange("bankAccount", e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bankName">Bank Name *</Label>
+                <Input
+                  id="bankName"
+                  placeholder="e.g., Nepal Bank Limited"
+                  value={formData.bankName || ""}
+                  onChange={(e) => handleInputChange("bankName", e.target.value)}
+                  required
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -505,6 +541,16 @@ export default function EditPrimaryTeacher() {
                 placeholder="Any additional information about the teacher"
                 value={formData.notes || ""}
                 onChange={(e) => handleInputChange("notes", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="emergencyContactRelation">Emergency Contact Relation *</Label>
+              <Input
+                id="emergencyContactRelation"
+                placeholder="e.g., Spouse, Parent"
+                value={formData.emergencyContactRelation || ""}
+                onChange={(e) => handleInputChange("emergencyContactRelation", e.target.value)}
+                required
               />
             </div>
           </CardContent>
