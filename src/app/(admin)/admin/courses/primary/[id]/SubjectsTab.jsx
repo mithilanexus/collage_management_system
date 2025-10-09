@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useSubjects } from "@/hooks/admin/courses";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,15 +14,11 @@ import { Badge } from "@/components/ui/badge";
 
 export default function SubjectsTab({ classData }) {
     const params = useParams();
-    const [subjects, setSubjects] = useState([]);
-    const [loadingSubjects, setLoadingSubjects] = useState(false);
-    const [loadingSchedule, setLoadingSchedule] = useState(false);
-    console.log(classData);
-    
-    useEffect(() => {
-        // fetchSubjects();
-        // fetchSchedule();
-      }, [classData]);
+    const { data: subjectsData, isLoading: loadingSubjects } = useSubjects({
+        classId: params.id,
+        level: "primary",
+    });
+    const subjects = subjectsData || [];
     
     return ( 
         <>

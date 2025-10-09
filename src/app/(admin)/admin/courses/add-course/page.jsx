@@ -21,8 +21,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useCreateCoursePrimary } from "@/hooks/admin/courses";
 
 export default function AddNewCourse() {
+  const { mutateAsync: createCourse, isPending } = useCreateCoursePrimary();
   const [selectedLevel, setSelectedLevel] = useState("");
   const [formData, setFormData] = useState({
     name: "",
@@ -105,30 +107,44 @@ export default function AddNewCourse() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.code || !selectedLevel) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    const courseData = {
+    const payload = {
       ...formData,
       level: selectedLevel,
-      id: Date.now(),
-      createdAt: new Date().toISOString()
     };
 
-    console.log("New Course:", courseData);
-    toast.success("Course created successfully!");
+    try {
+      await createCourse(payload);
+      toast.success("Course created successfully!");
+      // reset form
+      setFormData({
+        name: "",
+        code: "",
+        description: "",
+        level: "",
+        duration: "",
+        credits: "",
+        prerequisites: [],
+        objectives: [],
+        outcomes: [],
+      });
+      setSelectedLevel("");
+    } catch (err) {
+      toast.error(err?.message || "Failed to create course");
+    }
   };
 
   const selectedLevelData = courseLevels.find(level => level.value === selectedLevel);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/admin/courses">
           <Button variant="outline" size="sm">
@@ -429,9 +445,9 @@ export default function AddNewCourse() {
           <Link href="/admin/courses">
             <Button variant="outline">Cancel</Button>
           </Link>
-          <Button type="submit" className="flex items-center gap-2" disabled={!selectedLevel}>
+          <Button type="submit" className="flex items-center gap-2" disabled={!selectedLevel || isPending}>
             <Save className="w-4 h-4" />
-            Create Course
+            {isPending ? "Creating…" : "Create Course"}
           </Button>
         </div>
       </form>

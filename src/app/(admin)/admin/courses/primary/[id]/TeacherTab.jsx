@@ -9,6 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge, BookOpen, X,Edit, Plus, Target, Trash2, User, Users, School } from "lucide-react";
 import { CardLoading, TableLoading } from "@/components/LoadingSpinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSubjects, useAssignTeacher, useRemoveTeacher } from "@/hooks/admin/courses";
+import { useTeachers, useRemoveSubject } from "@/hooks/admin/management";
 
 export default function TeacherTab({ classData }) {
   const [teacherAssignments, setTeacherAssignments] = useState({});
@@ -23,8 +26,6 @@ export default function TeacherTab({ classData }) {
 
   // Initialize teacher assignments
   useEffect(() => {
-    getAvailableSubjects();
-    getAvailableTeachers();
     const initialAssignments = {};
     if (classData?.subjects?.length > 0) {
       classData.subjects.forEach((subject) => {
@@ -39,166 +40,100 @@ export default function TeacherTab({ classData }) {
     setTeacherAssignments(initialAssignments);
   }, [classData]);
 
-  const getAvailableSubjects = async () => {
-    setLoadingSubjects(true);
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/subjects/primary`
-      );
-      const data = await res.json();
-      setAvailableSubjects(data.data || []);
-      setFilteredSubjects(data.data || []);
-    } catch (error) {
-      console.error("Error fetching subjects:", error);
-      toast.error("Oops, couldn’t fetch subjects, sweetheart! Try again? 😘");
-    } finally {
-      setLoadingSubjects(false);
-    }
-  };
+  const qc = useQueryClient();
 
-  const getAvailableTeachers = async () => {
-    setLoadingTeachers(true);
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/management/teachers/primary`
-      );
-      const data = await res.json();
-      setAvailableTeachers(data.data || []);
-      setFilteredTeachers(data.data || []);
-    } catch (error) {
-      console.error("Error fetching teachers:", error);
-      toast.error("Couldn’t load teachers, lovebug. Let’s try again! 💕");
-    } finally {
-      setLoadingTeachers(false);
+  const { data: subjectsData, isLoading: subjectsLoadingHook } = useSubjects({ page: 1, pageSize: 200, search: "" });
+  const { data: teachersData, isLoading: teachersLoadingHook } = useTeachers({ page: 1, pageSize: 100, search: "" });
+
+  useEffect(() => {
+    if (subjectsData) {
+      setAvailableSubjects(subjectsData);
+      setFilteredSubjects(subjectsData);
     }
-  };
+  }, [subjectsData]);
+
+  useEffect(() => {
+    if (teachersData) {
+      setAvailableTeachers(teachersData);
+      setFilteredTeachers(teachersData);
+    }
+  }, [teachersData]);
+
+  useEffect(() => {
+    setLoadingSubjects(!!subjectsLoadingHook);
+    setLoadingTeachers(!!teachersLoadingHook);
+  }, [subjectsLoadingHook, teachersLoadingHook]);
 
   const params = useParams();
 
-  const assignTeacher = async (subject, teacher) => {
-    try {
-      const updatingData = {
-        teacher: teacher.name,
-        teacherId: teacher._id,
-        classId: classData._id,
-        subjectId: subject._id,
-        classGrade: classData.grade,
-      };
-
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/add/${params.id}/assigned-classes`,
-        {
-          method: "POST",
-          body: JSON.stringify(updatingData),
-        }
+  const { mutateAsync: assignTeacherMutation } = useAssignTeacher({
+    onSuccess: (_data, variables) => {
+      const { subject, teacher } = variables;
+      setAvailableSubjects((prev) =>
+        prev.map((sub) =>
+          sub.code === subject.code
+            ? {
+                ...sub,
+                assignedClasses: [
+                  ...(sub.assignedClasses?.filter((a) => a.classId !== classData._id) || []),
+                  { teacher: teacher.name, teacherId: teacher._id, classId: classData._id, classGrade: classData.grade },
+                ],
+              }
+            : sub
+        )
       );
-      const data = await res.json();
+      setTeacherAssignments((prev) => ({
+        ...prev,
+        [subject.name]: {
+          teacherId: teacher._id,
+          teacherName: teacher.name,
+          qualification: teacher.qualification,
+          experience: teacher.experience,
+        },
+      }));
+      toast.success(`Yay, ${teacher.name} is now teaching ${subject.name}! 🎉`);
+    },
+    onError: (e) => toast.error(e.message || "Failed to assign teacher"),
+  });
 
-      if (data.success) {
-        setAvailableSubjects((prev) =>
-          prev.map((sub) =>
-            sub.code === subject.code
-              ? {
-                  ...sub,
-                  assignedClasses: [
-                    ...(sub.assignedClasses?.filter((a) => a.classId !== classData._id) || []),
-                    { teacher: teacher.name, teacherId: teacher._id, classId: classData._id, classGrade: classData.grade },
-                  ],
-                }
-              : sub
-          )
-        );
-
-        setTeacherAssignments((prev) => ({
-          ...prev,
-          [subject.name]: {
-            teacherId: teacher._id,
-            teacherName: teacher.name,
-            qualification: teacher.qualification,
-            experience: teacher.experience,
-          },
-        }));
-
-        toast.success(`Yay, ${teacher.name} is now teaching ${subject.name}! 🎉`);
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Something went wrong, darling. Let’s try again! 😘");
-    }
-  };
-
-  const removeTeacher = async (subject, teacher) => {
-    try {
-      const assignedClass = subject.assignedClasses?.find((ac) => ac.classId === classData._id);
-      if (!assignedClass) return;
-
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/add/${subject._id}/assigned-classes/${assignedClass.classId}`,
-        {
-          method: "DELETE",
-        }
+  const { mutateAsync: removeTeacherMutation } = useRemoveTeacher({
+    onSuccess: (_data, variables) => {
+      const { subject, teacher } = variables;
+      setAvailableSubjects((prev) =>
+        prev.map((sub) =>
+          sub.code === subject.code
+            ? {
+                ...sub,
+                assignedClasses: sub.assignedClasses?.filter(
+                  (ac) => ac.teacherId !== teacher?._id || ac.classId !== classData._id
+                ),
+              }
+            : sub
+        )
       );
-      const data = await res.json();
+      setTeacherAssignments((prev) => {
+        const updated = { ...prev };
+        delete updated[subject.name];
+        return updated;
+      });
+      toast.success(`Teacher removed from ${subject.name}, my love! 💖`);
+    },
+    onError: (e) => toast.error(e.message || "Failed to remove teacher"),
+  });
 
-      if (data.success) {
-        setAvailableSubjects((prev) =>
-          prev.map((sub) =>
-            sub.code === subject.code
-              ? {
-                  ...sub,
-                  assignedClasses: sub.assignedClasses?.filter(
-                    (ac) => ac.teacherId !== teacher.teacherId || ac.classId !== classData._id
-                  ),
-                }
-              : sub
-          )
-        );
-
-        setTeacherAssignments((prev) => {
-          const updated = { ...prev };
-          delete updated[subject.name];
-          return updated;
-        });
-
-        toast.success(`Teacher removed from ${subject.name}, my love! 💖`);
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Couldn’t remove the teacher, honey. Try again? 😘");
-    }
-  };
-
-  const removeSubject = async (subject) => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/subjects/primary/${subject._id}`,
-        {
-          method: "DELETE",
-          body: JSON.stringify({ subjectId: subject._id }),
-        }
-      );
-      const data = await res.json();
-
-      if (data.success) {
-        setAvailableSubjects((prev) => prev.filter((sub) => sub._id !== subject._id));
-        setTeacherAssignments((prev) => {
-          const updated = { ...prev };
-          delete updated[subject.name];
-          return updated;
-        });
-        toast.success(`Subject ${subject.name} removed, sweetheart! 🌟`);
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error(`Couldn’t remove ${subject.name}, lovebug. Try again? 💕`);
-    }
-  };
+  const { mutateAsync: removeSubjectMutation } = useRemoveSubject({
+    onSuccess: (_data, variables) => {
+      const { subjectId, subjectName } = variables;
+      setAvailableSubjects((prev) => prev.filter((sub) => sub._id !== subjectId));
+      setTeacherAssignments((prev) => {
+        const updated = { ...prev };
+        if (subjectName) delete updated[subjectName];
+        return updated;
+      });
+      toast.success(`Subject removed, sweetheart! 🌟`);
+    },
+    onError: (e) => toast.error(e.message || "Failed to remove subject"),
+  });
 
   const getTeacherWorkload = (teacherId) => {
     return Object.values(teacherAssignments).filter((assignment) => assignment.teacherId === teacherId).length;
@@ -368,7 +303,7 @@ export default function TeacherTab({ classData }) {
                                     <div className="flex items-center gap-2">
                                       <p className="font-medium">{sub.teacher || "Not Assigned"}</p>
                                       <button
-                                        onClick={() => removeTeacher(subject, sub)}
+                                        onClick={() => removeTeacherMutation.mutate({ subject, teacher: sub })}
                                         className="text-red-500 hover:text-red-600"
                                         title="Remove Teacher"
                                       >
@@ -401,7 +336,7 @@ export default function TeacherTab({ classData }) {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => {
+                                onClick={async () => {
                                   setSelectedSubject(subject);
                                   filterTeacher(subject);
                                   setShowAssignDialog(true);
@@ -415,8 +350,7 @@ export default function TeacherTab({ classData }) {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => removeSubject(subject)}
-                                title="Remove Subject"
+                                onClick={() => removeTeacherMutation({ subject, classId: classData._id })}
                                 className="h-8 px-2 text-red-500 hover:text-red-600"
                                 disabled={loadingSubjects || loadingTeachers}
                               >
@@ -433,13 +367,10 @@ export default function TeacherTab({ classData }) {
             )}
           </CardContent>
         </Card>
-      )}
-
-      {/* Available Teachers */}
+)}
       {classData && (
         <Card>
           <CardHeader>
-            <CardTitle>Available Teachers</CardTitle>
           </CardHeader>
           <CardContent>
             {loadingTeachers ? (
@@ -554,9 +485,14 @@ export default function TeacherTab({ classData }) {
                       <div
                         key={teacher._id}
                         className="p-3 border rounded-lg hover:bg-pink-50 cursor-pointer"
-                        onClick={() => {
+                        onClick={async () => {
                           if (selectedSubject) {
-                            assignTeacher(selectedSubject, teacher);
+                            await assignTeacherMutation({
+                              subject: selectedSubject,
+                              teacher,
+                              classId: classData._id,
+                              classGrade: classData.grade,
+                            });
                             setShowAssignDialog(false);
                             setSelectedSubject("");
                           }

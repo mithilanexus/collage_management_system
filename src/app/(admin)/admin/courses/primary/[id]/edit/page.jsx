@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { usePrimaryClass, useUpdatePrimaryClass, useSubjects } from "@/hooks/admin/courses";
 
 export default function EditPrimaryClass() {
   const params = useParams();
@@ -43,44 +44,23 @@ export default function EditPrimaryClass() {
   const [errors, setErrors] = useState({});
   const [availableSubjects, setAvailableSubjects] = useState([]);
 
-  useEffect(() => {
-    fetchClassData();
-  }, [params.id]);
+  const { data: classData, isLoading: loadingClass } = usePrimaryClass({ id: params.id });
 
-  const fetchClassData = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/classes/${params.id}`
-      );
-      const data = await res.json();
-      setFormData(data.data);
-      setSelectedSubjects(data.data.subjects);
-      setAvailableSubjects(data.data.subjects.filter((subject) => subject.mandatory));
+  const { data: subjectsData } = useSubjects({ page: 1, pageSize: 200, search: "" });
+
+  useEffect(() => {
+    if (classData) {
+      setFormData(classData);
+      setSelectedSubjects(classData.subjects || []);
       setLoading(false);
-    } catch (error) {
-      toast.error("Failed to fetch class data, sweetheart. Try again soon! 💕");
-      console.error("Error fetching class data:", error);
     }
-  };
-
-  const getAvailableSubjects = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/subjects/primary`
-      );
-      const data = await res.json();
-      setAvailableSubjects([...data.data]);
-      setSelectedSubjects(
-        data.data.filter((subject) => subject.mandatory)
-      )
-    } catch (error) {
-      console.error("Error fetching subjects:", error);
-    }
-  };
+  }, [classData]);
 
   useEffect(() => {
-    getAvailableSubjects();
-  }, [formData.subjects]);
+    if (subjectsData) {
+      setAvailableSubjects([...subjectsData]);
+    }
+  }, [subjectsData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -133,6 +113,8 @@ export default function EditPrimaryClass() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const { mutateAsync: updatePrimaryClass } = useUpdatePrimaryClass();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
@@ -141,19 +123,9 @@ export default function EditPrimaryClass() {
     }
     try {
       setIsSubmitting(true);
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/classes/${params.id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...formData, subjects: selectedSubjects }),
-        }
-      );
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Class updated perfectly, my love! 🌟");
-        router.push("/admin/courses/primary");
-      }
+      await updatePrimaryClass({ id: params.id, payload: { ...formData, subjects: selectedSubjects } });
+      toast.success("Class updated perfectly, my love! 🌟");
+      router.push("/admin/courses/primary");
     } catch (error) {
       toast.error("Oops, something went wrong, sweetheart. Try again! 💕");
       console.error("Submit error:", error);
@@ -162,7 +134,7 @@ export default function EditPrimaryClass() {
     }
   };
 
-  if (loading) {
+  if (loading || loadingClass) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">

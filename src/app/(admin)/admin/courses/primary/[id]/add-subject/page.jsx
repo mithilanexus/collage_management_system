@@ -21,11 +21,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { usePrimaryClass, useCreateSubject } from "@/hooks/admin/courses";
 
 export default function AddSubjectToClass() {
   const params = useParams();
-  const [loading, setLoading] = useState(true);
-  const [classData, setClassData] = useState(null);
+  const { data: classData, isLoading: loading } = usePrimaryClass({ id: params.id });
   const [formData, setFormData] = useState({
     name: "",
     code: "",
@@ -38,11 +38,6 @@ export default function AddSubjectToClass() {
     objectives: ""
   });
 
-  // Mock class data
-  const mockClassData = {
-    1: { grade: "Grade 1", nepaliName: "कक्षा १" }
-  };
-
   const subjectTypes = [
     "Language", "Science", "Mathematics", "Social", "Physical", "Arts", "Technology", "Ethics"
   ];
@@ -52,15 +47,7 @@ export default function AddSubjectToClass() {
     "Mr. Ram Prasad", "Mrs. Gita Poudel", "Mr. Bikash Thapa"
   ];
 
-  useEffect(() => {
-    setTimeout(() => {
-      const data = mockClassData[params.id];
-      if (data) {
-        setClassData(data);
-      }
-      setLoading(false);
-    }, 1000);
-  }, [params.id]);
+  const { mutateAsync: createSubject } = useCreateSubject();
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -70,23 +57,22 @@ export default function AddSubjectToClass() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!formData.name || !formData.code || !formData.type) {
       toast.error("Please fill in all required fields");
       return;
     }
-
-    const subjectData = {
-      ...formData,
-      classId: params.id,
-      id: Date.now(),
-      createdAt: new Date().toISOString()
-    };
-
-    console.log("New Subject for Class:", subjectData);
-    toast.success("Subject added successfully!");
+    try {
+      const payload = {
+        ...formData,
+        classId: params.id,
+      };
+      await createSubject(payload);
+      toast.success("Subject added successfully!");
+    } catch (err) {
+      toast.error(err?.message || "Failed to add subject");
+    }
   };
 
   if (loading) {

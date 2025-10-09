@@ -22,6 +22,7 @@ import {
 import Link from "next/link";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useSubjects, useCreatePrimaryClass } from "@/hooks/admin/courses";
 
 export default function AddPrimaryClass() {
   const [formData, setFormData] = useState({
@@ -41,6 +42,8 @@ export default function AddPrimaryClass() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [availableSubjects, setAvailableSubjects] = useState([]);
+  const { data: subjectsData, isLoading: loadingSubjects } = useSubjects({ page: 1, pageSize: 100, search: "" });
+  const { mutateAsync: createPrimaryClass } = useCreatePrimaryClass();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -59,8 +62,11 @@ export default function AddPrimaryClass() {
   };
 
   useEffect(() => {
-    getAviableSubjects();
-  }, []);
+    if (subjectsData) {
+      setAvailableSubjects([...subjectsData]);
+      setSelectedSubjects(subjectsData.filter((subject) => subject.mandatory));
+    }
+  }, [subjectsData]);
   // Subject toggle to add/remove subject IDs
   const handleSubjectToggle = (subject) => {
     setSelectedSubjects((prev) => {
@@ -81,20 +87,6 @@ export default function AddPrimaryClass() {
   };
 
 
-  const getAviableSubjects = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/subjects/primary`
-      );
-      const data = await res.json();
-      setAvailableSubjects([...data.data]);
-      setSelectedSubjects(
-        data.data.filter((subject) => subject.mandatory)
-      )
-    } catch (error) {
-      console.error("Error fetching subjects:", error);
-    }
-  };
 
   const removeSubject = (subjectCode) => {
     setSelectedSubjects((prev) => prev.filter((s) => s.code !== subjectCode));
@@ -134,22 +126,10 @@ export default function AddPrimaryClass() {
         toast.error("Please fill in all required fields");
         return;
       }
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/add`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ ...formData, subjects: selectedSubjects }),
-        }
-      );
       setIsSubmitting(true);
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Primary class added successfully");
-        router.push("/admin/courses/primary");
-      }
+      await createPrimaryClass({ ...formData, subjects: selectedSubjects });
+      toast.success("Primary class added successfully");
+      router.push("/admin/courses/primary");
     } catch (error) {
       toast.error("Failed to add class. Please try again.");
       console.error("Submit error:", error);

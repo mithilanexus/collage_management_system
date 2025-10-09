@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,28 +22,25 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSubjects } from "@/hooks/admin/courses";
 
 export default function PrimarySubjects() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
-  const [primarySubjects, setPrimarySubjects] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(12);
+  const qc = useQueryClient();
 
-  useEffect(() => {
-    getPrimarySubjects();
-  }, []);
+  const { data, isLoading, isError, error, isFetching } = useSubjects(
+    { page, pageSize, search: searchTerm },
+    { keepPreviousData: true, staleTime: 60_000 }
+  );
 
-  const getPrimarySubjects = async () => {
-    try {
-      const response = await fetch("/api/admin/courses/subjects/primary");
-      const data = await response.json();
-      setPrimarySubjects(data.data);
-    } catch (error) {
-      console.error("Error fetching primary subjects:", error);
-      return [];
-    }
-  };
+  const itemsRaw = data?.items ?? data?.data ?? data ?? [];
+  const total = data?.total ?? itemsRaw?.length ?? 0;
 
-  const filteredSubjects = primarySubjects.filter((subject) => {
+  const filteredSubjects = itemsRaw.filter((subject) => {
     const matchesSearch =
       subject.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       subject.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -63,8 +60,8 @@ export default function PrimarySubjects() {
       const data = await response.json();
       console.log(data);
       if (data.success) {
-        toast.success("Subject deleted successfully!");
-        getPrimarySubjects();
+        toast.success(data.message || "Subject deleted successfully!");
+        await qc.invalidateQueries({ queryKey: ["admin", "subjects"] });
       } else {
         throw new Error(data.message);
       }
@@ -76,8 +73,8 @@ export default function PrimarySubjects() {
   };
 
   const stats = {
-    total: primarySubjects.length,
-    active: primarySubjects.filter(s => s.status === "active").length,
+    total: filteredSubjects.length,
+    active: filteredSubjects.filter(s => (s.status || "").toLowerCase() === "active").length,
   };
 
   return (
@@ -170,7 +167,24 @@ export default function PrimarySubjects() {
 
       {/* Subjects List */}
       <div className="space-y-4">
-        {filteredSubjects.map((subject) => (
+        {isLoading ? (
+          <Card><CardContent className="p-6">Loading…</CardContent></Card>
+        ) : isError ? (
+          <Card><CardContent className="p-6 text-destructive">{String(error?.message || "Failed to load")}</CardContent></Card>
+        ) : filteredSubjects.length === 0 ? (
+          <div className="text-center py-12">
+            <BookOpen className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2">No subjects found</h3>
+            <p className="text-muted-foreground mb-4">Try adjusting your search or filter criteria</p>
+            <Link href="/admin/courses/subjects/primary/add">
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add First Subject
+              </Button>
+            </Link>
+          </div>
+        ) : (
+        filteredSubjects.map((subject) => (
           <Card key={subject._id} className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -231,23 +245,17 @@ export default function PrimarySubjects() {
               </div>
             </CardContent>
           </Card>
-        ))}
+        ))
+        )}
       </div>
 
-
-      {filteredSubjects.length === 0 && (
-        <div className="text-center py-12">
-          <BookOpen className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">No subjects found</h3>
-          <p className="text-muted-foreground mb-4">Try adjusting your search or filter criteria</p>
-          <Link href="/admin/courses/subjects/primary/add">
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add First Subject
-            </Button>
-          </Link>
-        </div>
-      )}
+      {/* Pagination */}
+      <div className="flex gap-2 items-center justify-end">
+        <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>
+        <span className="text-sm">Page {page}</span>
+        <Button size="sm" variant="outline" disabled={filteredSubjects.length < pageSize || page * pageSize >= total} onClick={() => setPage((p) => p + 1)}>Next</Button>
+        {isFetching && <span className="text-xs text-muted-foreground ml-2">Updating…</span>}
+      </div>
     </div>
   );
 }

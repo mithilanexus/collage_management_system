@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useSubjects, useSchedules, useSaveSchedule } from "@/hooks/admin/courses";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,22 +27,42 @@ import { CardLoading, TableLoading } from "@/components/LoadingSpinner";
 export default function ScheduleTab({ classData }) {
   const [schedule, setSchedule] = useState({});
   const [timeSlots, setTimeSlots] = useState([]);
-  const [formattedSchedule, setFormattedSchedule] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingIndex, setEditingIndex] = useState(-1);
   const [newSlot, setNewSlot] = useState("");
-  const [availableSubjects, setAvailableSubjects] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState(null);
-  const [payload, setPayload] = useState({});
-  const [loadingSubjects, setLoadingSubjects] = useState(false);
-  const [loadingSchedule, setLoadingSchedule] = useState(false);
 
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
+  const { data: subjectsData, isLoading: loadingSubjects } = useSubjects({
+    level: "primary",
+  });
+  const availableSubjects = subjectsData || [];
+
+  const { data: scheduleData, isLoading: loadingSchedule } = useSchedules({
+    classId: classData?._id,
+    level: "primary",
+  });
+
+  const { mutateAsync: saveScheduleMutation } = useSaveSchedule();
+
   useEffect(() => {
-    fetchAvailableSubjects();
-    fetchSchedule();
-  }, [classData]);
+    if (scheduleData) {
+      console.log(scheduleData);
+      
+      const fetchedTimeSlots = (scheduleData.timeSlots || []).map((slot) => `${slot.start}-${slot.end}`);
+      setTimeSlots(fetchedTimeSlots);
+      const formattedScheduleMap = (scheduleData.schedule || []).reduce((acc, item) => {
+        acc[item.day] = (item.subjects || []).map((subject) => subject.subjectName || "");
+        return acc;
+      }, {});
+      setSchedule(formattedScheduleMap);
+    } else {
+      setTimeSlots([]);
+      const emptyByDay = days.reduce((acc, d) => { acc[d] = []; return acc; }, {});
+      setSchedule(emptyByDay);
+    }
+  }, [scheduleData]);
 
   useEffect(() => {
     if (!timeSlots || timeSlots.length === 0) return;
@@ -55,61 +76,6 @@ export default function ScheduleTab({ classData }) {
       return next;
     });
   }, [timeSlots]);
-
-  const fetchAvailableSubjects = async () => {
-    setLoadingSubjects(true);
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/subjects/primary`
-      );
-      const data = await res.json();
-      setAvailableSubjects(data.data || []);
-    } catch (error) {
-      console.error("Error fetching subjects:", error);
-      toast.error("Oh no, my love! Couldn’t fetch subjects. Try again? 😘");
-    } finally {
-      setLoadingSubjects(false);
-    }
-  };
-
-  const fetchSchedule = async () => {
-    setLoadingSchedule(true);
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/schedule/primary/${classData?._id}`
-      );
-      const data = await res.json();
-      const scheduleData = Array.isArray(data?.data) ? data.data[0] : undefined;
-
-      if (!scheduleData) {
-        setTimeSlots([]);
-        const emptyByDay = days.reduce((acc, d) => {
-          acc[d] = [];
-          return acc;
-        }, {});
-        setSchedule(emptyByDay);
-        setFormattedSchedule([]);
-        return;
-      }
-
-      const fetchedTimeSlots = (scheduleData.timeSlots || []).map(
-        (slot) => `${slot.start}-${slot.end}`
-      );
-      setTimeSlots(fetchedTimeSlots);
-
-      const formattedScheduleMap = (scheduleData.schedule || []).reduce((acc, item) => {
-        acc[item.day] = (item.subjects || []).map((subject) => subject.subjectName || "");
-        return acc;
-      }, {});
-      setSchedule(formattedScheduleMap);
-      setFormattedSchedule(scheduleData.schedule || []);
-    } catch (error) {
-      console.error("Error fetching schedule:", error);
-      toast.error("Couldn’t fetch the schedule, sweetheart. Let’s try again! 💕");
-    } finally {
-      setLoadingSchedule(false);
-    }
-  };
 
   const handlePeriodChange = (day, periodIndex, newSubject) => {
     const subject = availableSubjects.find((s) => s.name === newSubject);
@@ -181,7 +147,7 @@ export default function ScheduleTab({ classData }) {
       };
     });
 
-    const fields = {
+    const payload = {
       classGrade: classData?.grade || "",
       classId: classData?._id || "",
       timeSlots: timeSlots.map((slot, index) => {
@@ -194,25 +160,10 @@ export default function ScheduleTab({ classData }) {
       }),
       schedule: scheduleForPayload,
     };
-    setPayload(fields);
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/schedule/primary`,
-        {
-          method: "POST",
-          body: JSON.stringify(fields),
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Schedule saved, my love! You’re amazing! 😘");
-      } else {
-        throw new Error(data.message || "Failed to save");
-      }
+      await saveScheduleMutation(payload);
+      toast.success("Schedule saved, my love! You’re amazing! 😘");
     } catch (error) {
       console.error(error);
       toast.error("Couldn’t save the schedule, darling. Try again? 💕");

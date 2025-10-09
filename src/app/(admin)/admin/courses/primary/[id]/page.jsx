@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { usePrimaryClass, useDeleteClass } from "@/hooks/admin/courses";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,130 +46,24 @@ import SubjectsTab from "./SubjectsTab";
 
 export default function PrimaryClassDetails() {
   const params = useParams();
-  const [loading, setLoading] = useState(true);
-  const [classData, setClassData] = useState(null);
+  const router = useRouter();
+  const { data: classData, isLoading: loading } = usePrimaryClass({ id: params.id });
 
+  const { mutateAsync: deleteClass } = useDeleteClass();
 
-  useEffect(() => {
-    getClassData()
-  }, [params.id]);
-
-  const getClassData = async () => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/classes/${params.id}`)
-    const data = await res.json()
-    setClassData(data.data)
-    setLoading(false)
-    data.data.statistics = {
-      totalStudents: 45,
-      maleStudents: 23,
-      femaleStudents: 22,
-      averageAge: 5.5,
-      attendanceRate: 94.5,
-      passRate: 98.2,
-    }
-    data.data.teachers = [
-      {
-        name: "Mrs. Sita Sharma",
-        subject: "Nepali",
-        experience: "8 years",
-        qualification: "M.A. Nepali",
-      },
-      {
-        name: "Mr. John Smith",
-        subject: "English",
-        experience: "5 years",
-        qualification: "B.Ed. English",
-      },
-    ],
-      data.data.schedule = [
-        {
-          day: "Sunday",
-          periods: [
-            "Nepali",
-            "English",
-            "Math",
-            "Science",
-            "Break",
-            "Social Studies",
-            "HPE",
-          ],
-        },
-        {
-          day: "Monday",
-          periods: [
-            "Math",
-            "Nepali",
-            "English",
-            "Science",
-            "Break",
-            "Social Studies",
-            "HPE",
-          ],
-        },
-        {
-          day: "Tuesday",
-          periods: [
-            "English",
-            "Math",
-            "Nepali",
-            "Science",
-            "Break",
-            "Social Studies",
-            "Art",
-          ],
-        },
-        {
-          day: "Wednesday",
-          periods: [
-            "Science",
-            "Math",
-            "English",
-            "Nepali",
-            "Break",
-            "Social Studies",
-            "HPE",
-          ],
-        },
-        {
-          day: "Thursday",
-          periods: [
-            "Nepali",
-            "English",
-            "Math",
-            "Science",
-            "Break",
-            "Social Studies",
-            "Music",
-          ],
-        },
-        {
-          day: "Friday",
-          periods: [
-            "Math",
-            "Nepali",
-            "English",
-            "Science",
-            "Break",
-            "Social Studies",
-            "HPE",
-          ],
-        },
-      ]
-
-
-    setClassData(data.data)
-    setLoading(false)
-  }
-
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (
       confirm(
         "Are you sure you want to delete this class? This action cannot be undone."
       )
     ) {
-      console.log("Deleting class:", params.id);
-      toast.success("Class deleted successfully!");
-      // In real app, redirect after deletion
+      try {
+        await deleteClass(params.id);
+        toast.success("Class deleted successfully!");
+        router.push("/admin/courses/primary");
+      } catch (error) {
+        toast.error(error?.message || "Failed to delete class");
+      }
     }
   };
 
@@ -510,7 +404,7 @@ export default function PrimaryClassDetails() {
                         <CheckCircle className="w-4 h-4 text-green-600" />
                         <span className="text-sm font-medium">Active Students</span>
                       </div>
-                      <span className="font-bold text-green-600">{classData.statistics.totalStudents}</span>
+                      <span className="font-bold text-green-600">{classData?.students?.length}</span>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg  shadow">
@@ -573,7 +467,7 @@ export default function PrimaryClassDetails() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Attendance</p>
-                    <p className="text-2xl font-bold text-green-600">{classData.statistics.attendanceRate}%</p>
+                    <p className="text-2xl font-bold text-green-600">{0}%</p>
                   </div>
                   <div className="p-2 bg-green-100 rounded-lg">
                     <CheckCircle className="w-5 h-5 text-green-600" />
@@ -583,7 +477,7 @@ export default function PrimaryClassDetails() {
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className="bg-green-600 h-2 rounded-full"
-                      style={{ width: `${classData.statistics.attendanceRate}%` }}
+                      style={{ width: `${0}%` }}
                     ></div>
                   </div>
                 </div>
@@ -595,7 +489,7 @@ export default function PrimaryClassDetails() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Pass Rate</p>
-                    <p className="text-2xl font-bold text-blue-600">{classData.statistics.passRate}%</p>
+                    <p className="text-2xl font-bold text-blue-600">{0}%</p>
                   </div>
                   <div className="p-2 bg-blue-100 rounded-lg">
                     <Award className="w-5 h-5 text-blue-600" />
@@ -605,7 +499,7 @@ export default function PrimaryClassDetails() {
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className="bg-blue-600 h-2 rounded-full"
-                      style={{ width: `${classData.statistics.passRate}%` }}
+                      style={{ width: `${25}%` }}
                     ></div>
                   </div>
                 </div>

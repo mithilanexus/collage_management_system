@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,60 +35,45 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Link from "next/link";
+import { useDebounce } from "@uidotdev/usehooks";
+import { toast } from "sonner";
+import {
+  useCoursesPrimary,
+  useSubjects,
+  useDeleteClass,
+  useCoursesPrimaryClasses,
+} from "@/hooks/admin/courses";
 
 export default function PrimaryLevel() {
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearch = useDebounce(searchTerm, 500);
   const [sortBy, setSortBy] = useState("grade");
   const [filterBy, setFilterBy] = useState("all");
   const [viewMode, setViewMode] = useState("grid");
-  const [primaryClasses, setPrimaryClasses] = useState([]);
-  const [coreSubjects, setCoreSubjects] = useState([]);
 
-  useEffect(() => {
-    fetchPrimaryClasses();
-    fetchCoreSubjects();
-  }, []);
+  const { data: classesData, isLoading: classesLoading } = useCoursesPrimaryClasses({
+    search: debouncedSearch,
+    level: "primary",
+  });
 
-  const fetchPrimaryClasses = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/classes`
-      );
-      const data = await res.json();
-      setPrimaryClasses([...data.data]);
-    } catch (error) {
-      console.error("Error fetching primary classes:", error);
-    }
-  };
+  const { data: subjectsData, isLoading: subjectsLoading } = useSubjects({
+    level: "primary",
+    type: "core",
+  });
 
-  const fetchCoreSubjects = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/subjects/primary`
-      );
-      const data = await res.json();
-      setCoreSubjects([...data.data.filter((subject) => subject.type === "core")]);
-    } catch (error) {
-      console.error("Error fetching core subjects:", error);
-    }
-  };
- 
+  const { mutateAsync: deleteClass } = useDeleteClass();
+
   const handleDelete = async (classId) => {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/courses/primary/classes/${classId}`,
-        {
-          method: "DELETE",
-        }
-      );
-      const data = await res.json();
-      if (data.success) {
-        setPrimaryClasses(primaryClasses.filter((cls) => cls._id !== classId));
-      }
+      await deleteClass(classId);
+      toast.success("Class deleted successfully");
     } catch (error) {
-      console.error("Error deleting class:", error);
+      toast.error(error?.message || "Failed to delete class");
     }
   };
+  const primaryClasses = classesData || [];
+  const coreSubjects = subjectsData || [];
+
   const filteredAndSortedClasses = primaryClasses
     .filter((cls) => {
       const matchesSearch =
@@ -169,7 +154,7 @@ export default function PrimaryLevel() {
                 <School className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{primaryClasses.length}</p>
+                <p className="text-2xl font-bold">{classesLoading ? "…" : primaryClasses.length}</p>
                 <p className="text-sm text-muted-foreground">Total Classes</p>
               </div>
             </div>
@@ -183,7 +168,7 @@ export default function PrimaryLevel() {
                 <BookOpen className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{coreSubjects.length}</p>
+                <p className="text-2xl font-bold">{subjectsLoading ? "…" : coreSubjects.length}</p>
                 <p className="text-sm text-muted-foreground">Core Subjects</p>
               </div>
             </div>
@@ -217,7 +202,7 @@ export default function PrimaryLevel() {
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {Math.round(
+                  {primaryClasses.length === 0 ? 0 : Math.round(
                     primaryClasses.reduce(
                       (total, cls) => total + cls.weeklyHours,
                       0
