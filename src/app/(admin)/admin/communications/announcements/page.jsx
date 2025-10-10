@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,35 +19,26 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAnnouncements } from "@/hooks/admin/management";
 
 
 
 export default function AnnouncementsManagement() {
-  const [announcements, setAnnouncements] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(12);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const router = useRouter();
+  const qc = useQueryClient();
 
-  const filteredAnnouncements = announcements.filter(announcement =>
-    announcement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    announcement.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    announcement.targetAudience.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    announcement.author.toLowerCase().includes(searchTerm.toLowerCase())
+  const { data, isLoading, isError, error, isFetching } = useAnnouncements(
+    { page, pageSize, search: searchTerm },
+    { keepPreviousData: true, staleTime: 60_000 }
   );
-  const router = useRouter()
 
-  const getAnnouncements = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/communications/announcements`);
-      const data = await response.json();
-      setAnnouncements(data.data);
-    } catch (error) {
-      console.error("Error fetching announcements:", error);
-    }
-  };
-
-  useEffect(() => {
-    getAnnouncements();
-  }, []);
+  const items = data?.items ?? data?.data ?? data ?? [];
+  const total = data?.total ?? items?.length ?? 0;
 
   const handleView = (announcement) => {
     setSelectedAnnouncement(announcement);
@@ -59,13 +50,13 @@ export default function AnnouncementsManagement() {
 
   const handleDelete = async (announcementId) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/communications/announcements/${announcementId}`, {
+      const response = await fetch(`/api/admin/communications/announcements/${announcementId}`, {
         method: "DELETE",
       });
       const data = await response.json();
       if (data.success) {
-        const updatedAnnouncements = announcements.filter(a => a._id !== announcementId);
-        setAnnouncements(updatedAnnouncements);
+        // Best-effort refresh
+        await qc.invalidateQueries({ queryKey: ["admin", "announcements"] });
         toast.success(data.message);
       } else {
         throw new Error(data.message);
@@ -76,11 +67,7 @@ export default function AnnouncementsManagement() {
     }
   };
 
-  const togglePin = (announcementId) => {
-    setAnnouncements(announcements.map(a =>
-      a.id === announcementId ? { ...a, isPinned: !a.isPinned } : a
-    ));
-  };
+  // Pin toggle can be implemented via a mutation hitting an endpoint if needed
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -100,10 +87,10 @@ export default function AnnouncementsManagement() {
     }
   };
 
-  const totalAnnouncements = announcements.length;
-  const publishedAnnouncements = announcements.filter(a => a.status === "Published").length;
-  const pinnedAnnouncements = announcements.filter(a => a.isPinned).length;
-  const totalViews = announcements.reduce((sum, a) => sum + a.views, 0);
+  const totalAnnouncements = items.length;
+  const publishedAnnouncements = items.filter(a => a.status === "Published").length;
+  const pinnedAnnouncements = items.filter(a => a.isPinned).length;
+  const totalViews = items.reduce((sum, a) => sum + (Number(a.views) || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -178,11 +165,19 @@ export default function AnnouncementsManagement() {
             className="pl-10"
           />
         </div>
+        {isFetching && <span className="text-xs text-muted-foreground self-center">Updating…</span>}
       </div>
 
       {/* Announcements Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredAnnouncements.map((announcement) => (
+        {isLoading ? (
+          <div className="col-span-full">Loading…</div>
+        ) : isError ? (
+          <div className="col-span-full text-destructive">{String(error?.message || "Failed to load")}</div>
+        ) : items.length === 0 ? (
+          <div className="col-span-full text-muted-foreground">No announcements found.</div>
+        ) : (
+          items.map((announcement) => (
           <Card key={announcement._id} className="hover:shadow-lg transition-shadow">
             <div className="aspect-video relative overflow-hidden rounded-t-lg">
               <img
@@ -249,14 +244,6 @@ export default function AnnouncementsManagement() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => togglePin(announcement.id)}
-                  className={announcement.isPinned ? "text-blue-600" : ""}
-                >
-                  <Pin className="w-3 h-3" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
                   onClick={() => handleEdit(announcement._id)}
                 >
                   <Edit className="w-3 h-3" />
@@ -265,14 +252,14 @@ export default function AnnouncementsManagement() {
                   size="sm"
                   variant="outline"
                   onClick={() => handleDelete(announcement._id)}
-                  className="text-destructive hover:text-destructive"
                 >
                   <Trash2 className="w-3 h-3" />
                 </Button>
               </div>
             </CardContent>
           </Card>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Announcement Details Modal */}

@@ -10,6 +10,7 @@ import { DatePicker } from "@/components/DatePicker";
 import Schedule from "./Schedule";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useSaveExamSchedule } from "@/hooks/admin/exams";
 
 export default function AddExamSchedule() {
     const [formData, setFormData] = useState({
@@ -37,6 +38,8 @@ export default function AddExamSchedule() {
         });
     };
 const router = useRouter()
+    const { mutateAsync: saveExamSchedule } = useSaveExamSchedule();
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -45,22 +48,18 @@ const router = useRouter()
             ...scheduleData
         };
 
-        console.log('Exam Schedule Data:', examData);
-
-        const response = await fetch('/api/admin/exam/add-schedule', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(examData),
-        });
-
-        const data = await response.json();
-        if (data.success) {
-            toast.success(data.message);
-            router.push("/admin/exams");
-        } else {
-            toast.error(data.message);
+        try {
+            const data = await saveExamSchedule(examData);
+            const success = data?.success !== false; // support http wrapper return or API json
+            const message = data?.message || "Schedule added successfully";
+            if (success) {
+                toast.success(message);
+                router.push("/admin/exams");
+            } else {
+                toast.error(message);
+            }
+        } catch (err) {
+            toast.error(err?.message || "Failed to save schedule");
         }
     };
 

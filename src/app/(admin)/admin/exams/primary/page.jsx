@@ -22,9 +22,9 @@ import {
   TrendingUp,
   CalendarDays
 } from "lucide-react";
+import { useExamSchedules } from "@/hooks/admin/exams";
 
 export default function PrimaryExamSchedules() {
-  const [loading, setLoading] = useState(true);
   const [schedules, setSchedules] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -75,48 +75,17 @@ export default function PrimaryExamSchedules() {
     ];
   };
 
+  const { data: scheduleResp, isLoading: loading } = useExamSchedules();
   useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // Fetch real data from API endpoint
-        const res = await fetch("/api/admin/exam/add-schedule").catch(() => ({ ok: false }));
-        
-        if (isMounted) {
-          if (res.ok) {
-            const data = await res.json();
-            if (data.success && Array.isArray(data.data)) {
-              // Filter for primary level exams and add status calculation
-              const primaryExams = data.data
-                .filter(exam => exam.examLevel === "primary")
-                .map(exam => ({
-                  ...exam,
-                  status: getExamStatusFromDates(exam.startDate, exam.endDate)
-                }));
-              
-              setSchedules(primaryExams.length > 0 ? primaryExams : buildDummySchedules());
-            } else {
-              setSchedules(buildDummySchedules());
-            }
-          } else {
-            // Use dummy data for UI development when API fails
-            setSchedules(buildDummySchedules());
-          }
-        }
-      } catch (err) {
-        console.error(err);
-        if (isMounted) {
-          setSchedules(buildDummySchedules());
-        }
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    fetchData();
-    return () => { isMounted = false; };
-  }, []);
+    const apiItems = Array.isArray(scheduleResp) ? scheduleResp : (scheduleResp?.data ?? []);
+    const primaryExams = (apiItems || [])
+      .filter((exam) => exam.examLevel === "primary")
+      .map((exam) => ({
+        ...exam,
+        status: getExamStatusFromDates(exam.startDate, exam.endDate),
+      }));
+    setSchedules(primaryExams.length > 0 ? primaryExams : buildDummySchedules());
+  }, [scheduleResp]);
 
   // Helper function to calculate exam status from dates
   const getExamStatusFromDates = (startDate, endDate) => {

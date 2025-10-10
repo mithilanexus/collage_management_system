@@ -1,40 +1,37 @@
 import PrimarySubjectModel from "@/models/admin/course/subjects/primarySubject.model";
-export async function GET() {
-    try {
-        const subjects = await PrimarySubjectModel.find({});
-        return Response.json({
-            message: "Subjects retrieved successfully",
-            success: true,
-            data: subjects,
-        });
-    } catch (error) {
-        return Response.json({
-            message: "Failed to retrieve subjects",
-            success: false,
-            error: error.message,
-        });
-    }
+import connectDB from "@/lib/coonectDb";
+import { ok, created, serverError, badRequest, conflict } from "@/lib/apiResponse";
+import { PrimarySubjectSchema } from "@/lib/validation/admin";
 
+export async function GET() {
+  try {
+    await connectDB();
+    const subjects = await PrimarySubjectModel.find({});
+    return ok(subjects, "Subjects retrieved successfully");
+  } catch (error) {
+    return serverError("Failed to retrieve subjects", error.message);
+  }
 }
 
 export async function POST(request) {
-
-    try {
-        const req = await request.json();
-        req.subjectLevel = "primary";
-        req.objectives = req.objectives.split("\n");
-        const newSubject = await PrimarySubjectModel.create(req);
-        return Response.json({
-            message: "Subject added successfully",
-            success: true,
-            data: newSubject,
-        });
-    } catch (error) {
-        return Response.json({
-            message: "Failed to add subject",
-            success: false,
-            error: error.message,
-        });
+  try {
+    await connectDB();
+    const body = await request.json();
+    const parsed = PrimarySubjectSchema.safeParse({ ...body, subjectLevel: "primary" });
+    if (!parsed.success) {
+      return badRequest("Validation failed", parsed.error.flatten());
     }
-
+    const payload = parsed.data;
+    try {
+      const newSubject = await PrimarySubjectModel.create(payload);
+      return created(newSubject, "Subject added successfully");
+    } catch (err) {
+      if (err?.code === 11000) {
+        return conflict("Subject with the same code already exists", err.message);
+      }
+      throw err;
+    }
+  } catch (error) {
+    return serverError("Failed to add subject", error.message);
+  }
 }

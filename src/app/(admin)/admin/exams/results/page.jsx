@@ -27,6 +27,9 @@ import {
   Upload
 } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { useExamSchedules, useExamResults, useSaveExamResult } from "@/hooks/admin/exams";
+import { useStudents } from "@/hooks/admin/management/useStudentQueries";
 
 export default function ExamResults() {
   const [loading, setLoading] = useState(true);
@@ -116,68 +119,44 @@ export default function ExamResults() {
     return { exams: dummyExams, students: dummyStudents, results: dummyResults };
   };
 
+  const qc = useQueryClient();
+
+  // Exams list via schedules
+  const { data: examsDataResp, isLoading: loadingExams } = useExamSchedules();
+  const examsData = Array.isArray(examsDataResp) ? examsDataResp : (examsDataResp?.data ?? []);
+
+  // Students list
+  const { data: studentsDataResp, isLoading: loadingStudents } = useStudents({ page: 1, pageSize: 1000, search: "" });
+  const studentsData = Array.isArray(studentsDataResp) ? studentsDataResp : (studentsDataResp?.data ?? []);
+
+  // Results list
+  const { data: resultsDataResp, isLoading: loadingResults } = useExamResults({}, {});
+  const resultsData = resultsDataResp?.items ?? resultsDataResp?.data?.items ?? (Array.isArray(resultsDataResp) ? resultsDataResp : []);
+
+  // Sync loading flag
   useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // Fetch real data from API endpoints
-        const [examRes, studentRes, resultRes] = await Promise.all([
-          fetch("/api/admin/exam/add-schedule").catch(() => ({ ok: false })),
-          fetch("/api/admin/students").catch(() => ({ ok: false })),
-          fetch("/api/admin/exam-results").catch(() => ({ ok: false }))
-        ]);
+    setLoading(!!(loadingExams || loadingStudents || loadingResults));
+  }, [loadingExams, loadingStudents, loadingResults]);
 
-        if (isMounted) {
-          // Try to use real API data, fallback to dummy data if needed
-          let examsData = [];
-          let studentsData = [];
-          let resultsData = [];
+  // Sync data with fallback to dummy for UI
+  useEffect(() => {
+    if (!loading) {
+      const ex = examsData || [];
+      const st = studentsData || [];
+      const rs = resultsData || [];
 
-          if (examRes.ok) {
-            const examData = await examRes.json();
-            examsData = examData.success ? examData.data : [];
-          }
-
-          if (studentRes.ok) {
-            const studentData = await studentRes.json();
-            studentsData = studentData.success ? studentData.data : [];
-          }
-
-          if (resultRes.ok) {
-            const resultData = await resultRes.json();
-            resultsData = resultData.success ? resultData.data : [];
-          }
-
-          // If no real data available, use dummy data for UI development
-          if (examsData.length === 0 || studentsData.length === 0) {
-            const dummyData = buildDummyData();
-            setExams(examsData.length > 0 ? examsData : dummyData.exams);
-            setStudents(studentsData.length > 0 ? studentsData : dummyData.students);
-            setResults(resultsData.length > 0 ? resultsData : dummyData.results);
-          } else {
-            setExams(examsData);
-            setStudents(studentsData);
-            setResults(resultsData);
-          }
-        }
-      } catch (err) {
-        console.error(err);
-        if (isMounted) {
-          // Fallback to dummy data on error
-          const dummyData = buildDummyData();
-          setExams(dummyData.exams);
-          setStudents(dummyData.students);
-          setResults(dummyData.results);
-        }
-      } finally {
-        if (isMounted) setLoading(false);
+      if (ex.length === 0 || st.length === 0) {
+        const dummy = buildDummyData();
+        setExams(ex.length > 0 ? ex : dummy.exams);
+        setStudents(st.length > 0 ? st : dummy.students);
+        setResults(rs.length > 0 ? rs : dummy.results);
+      } else {
+        setExams(ex);
+        setStudents(st);
+        setResults(rs);
       }
-    };
-
-    fetchData();
-    return () => { isMounted = false; };
-  }, []);
+    }
+  }, [loading, examsData, studentsData, resultsData]);
 
   // Filter and search results
   const filteredResults = useMemo(() => {
@@ -262,34 +241,20 @@ export default function ExamResults() {
     setIsAddDialogOpen(true);
   };
 
-  const handleSaveResult = async (resultData) => {
-    try {
-      const method = editingResult ? "PUT" : "POST";
-      const payload = editingResult ? { ...resultData, id: editingResult._id } : resultData;
-      
-      const response = await fetch("/api/admin/exam-results", {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+  const { mutate: saveResultMutate } = useSaveExamResult({
+    onSuccess: () => {
+      toast.success(editingResult ? "Result updated successfully" : "Result added successfully");
+      setIsAddDialogOpen(false);
+      setEditingResult(null);
+      qc.invalidateQueries({ queryKey: ["admin", "examResults", {}] });
+    },
+    onError: (e) => toast.error(e.message || "Failed to save result"),
+  });
 
-      const data = await response.json();
-      
-      if (data.success) {
-        toast.success(editingResult ? "Result updated successfully" : "Result added successfully");
-        setIsAddDialogOpen(false);
-        setEditingResult(null);
-        // Refresh data
-        fetchData();
-      } else {
-        toast.error(data.message || "Failed to save result");
-      }
-    } catch (err) {
-      console.error("Error saving result:", err);
-      toast.error("Failed to save result");
-    }
+  const handleSaveResult = async (resultData) => {
+    const method = editingResult ? "PUT" : "POST";
+    const payload = editingResult ? { ...resultData, id: editingResult._id } : resultData;
+    saveResultMutate({ payload, method });
   };
 
   return (
