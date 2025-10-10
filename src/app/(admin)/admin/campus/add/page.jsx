@@ -1,4 +1,5 @@
 "use client";
+import { useCreateFacility } from "@/hooks/admin/campus/facilities";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -46,6 +47,7 @@ export default function AddFacilityPage() {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { mutateAsync: createFacility } = useCreateFacility();
   const form = useForm({
     resolver: zodResolver(facilitySchema),
     defaultValues: {
@@ -77,20 +79,10 @@ export default function AddFacilityPage() {
         : [],
     };
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Facility created");
-        router.push("/admin/campus");
-      } else {
-        throw new Error(data.message);
-      }
+      const data = await createFacility(payload);
+      const success = data?.success !== false;
+      toast.success(success ? (data?.message || "Facility created") : "Facility created");
+      router.push("/admin/campus");
     } catch (error) {
       console.error("Error creating facility:", error);
       toast.error(error.message);

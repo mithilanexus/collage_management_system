@@ -23,6 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useResource, useUpdateResource } from "@/hooks/admin/campus/resources";
 
 const schema = z.object({
   resourceName: z.string().min(1),
@@ -73,53 +74,33 @@ export default function EditResourcePage() {
   });
  
 
-  const getResource = async () => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/resources/${id}`);
-      const data = await res.json();
-      form.reset(data.data);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching resource:", error);
-      toast.error("Failed to fetch resource");
-      setLoading(false);
-    }
-  };
-
+  const { data: resourceResp, isLoading: loadingResource } = useResource(id, {});
   useEffect(() => {
     if (!id) return;
-    getResource();
-  }, [id]);
+    if (!loadingResource) {
+      const payload = resourceResp?.data || resourceResp;
+      if (payload) form.reset(payload);
+      setLoading(false);
+    }
+  }, [id, loadingResource, resourceResp]);
 
-  const onSubmit =async (values) => {
+  const { mutateAsync: updateResource } = useUpdateResource();
+  const onSubmit = async (values) => {
     const payload = {
       ...values,
       features: values.features
         ? values.features.split(",").map((s) => s.trim()).filter(Boolean)
         : [],
-      _id: id,
     };
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/resources/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      console.log("Update Resource payload", payload);
-      if (data.success) {
-        toast.success("Resource updated");
-        router.push("/admin/campus/resources");
-      } else {
-        throw new Error(data.message);
-      }
+      const data = await updateResource({ id, payload });
+      const success = data?.success !== false;
+      toast.success(success ? (data?.message || "Resource updated") : "Resource updated");
+      router.push("/admin/campus/resources");
     } catch (error) {
       console.error("Error updating resource:", error);
       toast.error(error.message);
     }
-    
   };
 
   return (

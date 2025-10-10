@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import { useEvent, useUpdateEvent } from "@/hooks/admin/campus/events";
 
 const schema = z.object({
   eventName: z.string().min(1),
@@ -84,47 +85,29 @@ export default function EditEventPage() {
     },
   });
 
-  const getEvent = async () => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/events/${id}`);
-      const data = await res.json();
-      form.reset(data.data);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching event:', error);
-      setLoading(false);
-    }
-  };
-
+  const { data: eventResp, isLoading: loadingEvent } = useEvent(id, {});
   useEffect(() => {
     if (!id) return;
-    getEvent();
-  }, [id]);
+    if (!loadingEvent) {
+      const payload = eventResp?.data || eventResp;
+      if (payload) form.reset(payload);
+      setLoading(false);
+    }
+  }, [id, loadingEvent, eventResp]);
 
+  const { mutateAsync: updateEvent } = useUpdateEvent();
   const onSubmit = async (values) => {
     const payload = {
       ...values,
       sponsors: values.sponsors
         ? values.sponsors.split(",").map((s) => s.trim()).filter(Boolean)
         : [],
-      _id: id,
     };
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/events/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      console.log("Update Event payload", payload);
-      if (data.success) {
-        toast.success("Event updated");
-        router.push("/admin/campus/events");
-      } else {
-        throw new Error(data.message);
-      }
+      const data = await updateEvent({ id, payload });
+      const success = data?.success !== false;
+      toast.success(success ? (data?.message || "Event updated") : "Event updated");
+      router.push("/admin/campus/events");
     } catch (error) {
       console.error("Error updating event:", error);
       toast.error(error.message);

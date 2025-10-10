@@ -161,5 +161,9 @@ const studentSchema = new mongoose.Schema(
   }
 );
 
+// Indexes to speed up common admin filters
+studentSchema.index({ class: 1, section: 1, status: 1 });
+studentSchema.index({ name: 1 });
+
 export default mongoose.models.Student ||
   mongoose.model("Student", studentSchema);

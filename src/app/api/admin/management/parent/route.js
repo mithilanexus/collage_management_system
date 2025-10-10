@@ -1,25 +1,33 @@
 import parentModel from "@/models/parent/Parent.model";
 import { generateParentId } from "@/utils/getUinqueId";
+import connectDB from "@/lib/coonectDb";
+import { ok, created, serverError } from "@/lib/apiResponse";
+import { parsePageParams, paginateQuery } from "@/lib/pagination";
 
-export async function GET() {
+export async function GET(request) {
   try {
-    const parents = await parentModel.find({}).lean();
-    return Response.json({
-      message: "Parents data retrieved successfully",
-      success: true,
-      data: parents,
-    });
+    await connectDB();
+    const { page, pageSize, search } = parsePageParams(request);
+    const filter = {};
+    if (search) {
+      filter.$or = [
+        { fatherName: { $regex: search, $options: "i" } },
+        { motherName: { $regex: search, $options: "i" } },
+        { fatherPhone: { $regex: search, $options: "i" } },
+        { motherPhone: { $regex: search, $options: "i" } },
+      ];
+    }
+    const baseQuery = parentModel.find(filter).sort({ createdAt: -1 }).lean();
+    const { data, total } = await paginateQuery(baseQuery, page, pageSize);
+    return ok({ items: data, total, page, pageSize }, "Parents data retrieved successfully");
   } catch (error) {
-    return Response.json({
-      message: "Failed to retrieve parents data",
-      success: false,
-      error,
-    });
+    return serverError("Failed to retrieve parents data", error.message);
   }
 }
 export async function POST(request) {
-  const req = await request.json();
   try {
+    await connectDB();
+    const req = await request.json();
     const parentId = generateParentId(
       req.fatherName,
       req.fatherPhone,
@@ -29,18 +37,8 @@ export async function POST(request) {
     req.students = [];
     req.studentsCount = 0;
     const newParent = await parentModel.create(req);
-    const res = {
-      message: "Parent added successfully",
-      success: true,
-      data: newParent,
-    };
-    return Response.json({ data: res });
+    return created(newParent, "Parent added successfully");
   } catch (error) {
-    const res = {
-      message: "Parent added failed",
-      success: false,
-      error,
-    };
-    return Response.json({ data: res });
+    return serverError("Parent added failed", error.message);
   }
 }

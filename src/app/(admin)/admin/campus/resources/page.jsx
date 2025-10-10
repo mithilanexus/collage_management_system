@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,32 +33,25 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useResources } from "@/hooks/admin/management";
+import { useDeleteResource } from "@/hooks/admin/campus/resources";
 export default function ResourcesManagement() {
-  const [resources, setResources] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(12);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedResource, setSelectedResource] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const router = useRouter();
-  useEffect(() => {
-    getResources();
-  }, []);
-  const getResources = async () => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/resources`);
-      const data = await res.json();
-      setResources(data.data);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching resources:', error);
-    }
-  };
-  const filteredResources = resources.filter(resource =>
-    resource.resourceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    resource.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    resource.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    resource.provider.toLowerCase().includes(searchTerm.toLowerCase())
+  const qc = useQueryClient();
+
+  const { data, isLoading, isError, error, isFetching } = useResources(
+    { page, pageSize, search: searchTerm },
+    { keepPreviousData: true, staleTime: 60_000 }
   );
+
+  const items = data?.items ?? data?.data ?? data ?? [];
+  const total = data?.total ?? items?.length ?? 0;
 
   const handleView = (resource) => {
     setSelectedResource(resource);
@@ -68,25 +61,17 @@ export default function ResourcesManagement() {
     router.push(`/admin/campus/resources/${resourceId}/edit`);
   };
 
-  const handleDelete = async (resourceId) => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/resources/${resourceId}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Resource deleted");
-        const updatedResources = resources.filter(resource => resource._id !== resourceId);
-        setResources(updatedResources);
+  const { mutateAsync: deleteResource } = useDeleteResource({
+    onSuccess: async (data) => {
+      const success = data?.success !== false;
+      toast.success((success && (data?.message || "Resource deleted")) || "Resource deleted");
+      await qc.invalidateQueries({ queryKey: ["admin", "resources", {}] });
+    },
+    onError: (e) => toast.error(e?.message || "Failed to delete"),
+  });
 
-        router.push("/admin/campus/resources");
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (error) {
-      console.error("Error deleting resource:", error);
-      toast.error(error.message);
-    }
+  const handleDelete = async (resourceId) => {
+    await deleteResource(resourceId);
   };
 
   const getStatusColor = (status) => {
@@ -110,16 +95,16 @@ export default function ResourcesManagement() {
     }
   };
 
-  const totalResources = resources.length;
-  const activeResources = resources.filter(r => r.status === "Active").length;
-  const totalCost = resources.reduce((sum, r) => {
+  const totalResources = items.length;
+  const activeResources = items.filter(r => r.status === "Active").length;
+  const totalCost = items.reduce((sum, r) => {
     const cost = parseInt(r.cost.replace(/[^\d]/g, '')) || 0;
     return sum + cost;
   }, 0);
 
   return (
     <>
-      {loading ? (
+      {isLoading ? (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="space-y-2">
@@ -160,23 +145,19 @@ export default function ResourcesManagement() {
           </div>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-6"></div>
+          )}
+
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Campus Resources</h1>
               <p className="text-muted-foreground">Manage campus resources and services</p>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                Export Report
-              </Button>
-              <Button onClick={() => window.location.href = '/admin/campus/resources/add'} className="flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                Add Resource
-              </Button>
-            </div>
+            <Button onClick={() => window.location.href = '/admin/campus/resources/add'} className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Add Resource
+            </Button>
           </div>
 
           {/* Stats Cards */}
@@ -242,7 +223,10 @@ export default function ResourcesManagement() {
 
           {/* Resources Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredResources.map((resource) => (
+            {items.length === 0 ? (
+              <div className="col-span-full text-muted-foreground">No resources found.</div>
+            ) : (
+            items.map((resource) => (
               <Card key={resource._id} className="hover:shadow-lg transition-shadow">
                 <div className="aspect-video relative overflow-hidden rounded-t-lg">
                   <img
@@ -331,7 +315,7 @@ export default function ResourcesManagement() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )) )}
           </div>
 
           {/* Resource Details Modal */}
@@ -470,8 +454,15 @@ export default function ResourcesManagement() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </div>
-      )}
+
+          {/* Pagination */}
+          <div className="flex gap-2 items-center justify-end">
+            <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>
+            <span className="text-sm">Page {page}</span>
+            <Button size="sm" variant="outline" disabled={items.length < pageSize || page * pageSize >= total} onClick={() => setPage((p) => p + 1)}>Next</Button>
+            {isFetching && <span className="text-xs text-muted-foreground ml-2">Updating…</span>}
+          </div> 
+      
     </>
   );
 }

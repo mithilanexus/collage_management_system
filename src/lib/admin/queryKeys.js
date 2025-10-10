@@ -1,0 +1,23 @@
+export const adminKeys = {
+  root: ["admin"],
+  announcements: (q = {}) => ["admin", "announcements", q],
+  resources: (q = {}) => ["admin", "resources", q],
+  events: (q = {}) => ["admin", "events", q],
+  teachers: (q = {}) => ["admin", "teachers", q],
+  staff: (q = {}) => ["admin", "staff", q],
+  parents: (q = {}) => ["admin", "parents", q],
+  students: (q = {}) => ["admin", "students", q],
+  subjects: (q = {}) => ["admin", "subjects", q],
+  classes: (q = {}) => ["admin", "classes", q],
+  schedules: (q = {}) => ["admin", "schedules", q],
+  examSchedule: (q = {}) => ["admin", "examSchedule", q],
+  examAttendance: (q = {}) => ["admin", "examAttendance", q],
+  examResults: (q = {}) => ["admin", "examResults", q],
+  // Academic related keys
+  attendance: (q = {}) => ["admin", "academic", "attendance", q],
+  grades: (q = {}) => ["admin", "academic", "grades", q],
+  transcripts: (q = {}) => ["admin", "academic", "transcripts", q],
+  academicStats: () => ["admin", "academic", "stats"],
+  courses: (q = {}) => ["admin", "courses", q],
+  courseLevels: () => ["admin", "courses", "levels"],
+};

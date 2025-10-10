@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,35 +31,27 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEvents } from "@/hooks/admin/management";
+import { useDeleteEvent } from "@/hooks/admin/campus/events";
 
 // Mock data for cam 
 export default function EventsManagement() {
-  const [events, setEvents] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(12);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-
-  const filteredEvents = events.filter(event =>
-    event.eventName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.eventType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.organizer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.venue.toLowerCase().includes(searchTerm.toLowerCase())
-  );
   const router = useRouter();
-  useEffect(() => {
-    getEvents();
-  }, []);
-  const getEvents = async () => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/events`);
-      const data = await res.json();
-      setEvents(data.data);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching events:', error);
-    }
-  };
+  const qc = useQueryClient();
+
+  const { data, isLoading, isError, error, isFetching } = useEvents(
+    { page, pageSize, search: searchTerm },
+    { keepPreviousData: true, staleTime: 60_000 }
+  );
+
+  const items = data?.items ?? data?.data ?? data ?? [];
+  const total = data?.total ?? items?.length ?? 0;
 
   const handleView = (event) => {
     setSelectedEvent(event);
@@ -69,26 +61,17 @@ export default function EventsManagement() {
     router.push(`/admin/campus/events/${eventId}/edit`);
   };
 
-  const handleDelete = async (eventId) => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/events/${eventId}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
-      console.log("Delete Event payload", data);
-      if (data.success) {
-        toast.success("Event deleted");
-        const updatedEvents = events.filter(event => event._id !== eventId);
-        setEvents(updatedEvents);
+  const { mutateAsync: deleteEvent } = useDeleteEvent({
+    onSuccess: async (data) => {
+      const success = data?.success !== false;
+      toast.success((success && (data?.message || "Event deleted")) || "Event deleted");
+      await qc.invalidateQueries({ queryKey: ["admin", "events", {}] });
+    },
+    onError: (e) => toast.error(e?.message || "Failed to delete"),
+  });
 
-        router.push("/admin/campus/events");
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (error) { 
-      console.error("Error deleting event:", error);
-      toast.error(error.message);
-    }
+  const handleDelete = async (eventId) => {
+    await deleteEvent(eventId);
   };
 
   const getStatusColor = (status) => {
@@ -110,14 +93,14 @@ export default function EventsManagement() {
     }
   };
 
-  const totalEvents = events.length;
-  const upcomingEvents = events.filter(e => e.status === "Upcoming").length;
-  const ongoingEvents = events.filter(e => e.status === "Ongoing").length;
-  const totalAttendees = events.reduce((sum, e) => sum + e.registeredAttendees, 0);
+  const totalEvents = items.length;
+  const upcomingEvents = items.filter(e => e.status === "Upcoming").length;
+  const ongoingEvents = items.filter(e => e.status === "Ongoing").length;
+  const totalAttendees = items.reduce((sum, e) => sum + (Number(e.registeredAttendees) || 0), 0);
 
   return (
     <>
-      {loading ? (
+      {isLoading ? (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="space-y-2">
@@ -156,6 +139,10 @@ export default function EventsManagement() {
               </Card>
             ))}
           </div>
+        </div>
+      ) : isError ? (
+        <div className="space-y-6">
+          <div className="text-destructive">{String(error?.message || "Failed to load events")}</div>
         </div>
       ) : (
 
@@ -235,100 +222,104 @@ export default function EventsManagement() {
 
           {/* Events Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredEvents.map((event) => (
-              <Card key={event._id} className="hover:shadow-lg transition-shadow">
-                <div className="aspect-video relative overflow-hidden rounded-t-lg">
-                  <img
-                    src={event.image}
-                    alt={event.eventName}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-2 right-2 flex gap-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
-                      {event.status}
-                    </span>
-                  </div>
-                  <div className="absolute top-2 left-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(event.priority)}`}>
-                      {event.priority}
-                    </span>
-                  </div>
-                </div>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg line-clamp-2">{event.eventName}</CardTitle>
-                      <p className="text-sm text-muted-foreground">{event.eventType}</p>
+            {items.length === 0 ? (
+              <div className="col-span-full text-muted-foreground">No events found.</div>
+            ) : (
+              items.map((event) => (
+                <Card key={event._id} className="hover:shadow-lg transition-shadow">
+                  <div className="aspect-video relative overflow-hidden rounded-t-lg">
+                    <img
+                      src={event.image}
+                      alt={event.eventName}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 right-2 flex gap-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
+                        {event.status}
+                      </span>
+                    </div>
+                    <div className="absolute top-2 left-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(event.priority)}`}>
+                        {event.priority}
+                      </span>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg line-clamp-2">{event.eventName}</CardTitle>
+                        <p className="text-sm text-muted-foreground">{event.eventType}</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>
 
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-muted-foreground" />
-                      <span>{event.startDate} - {event.endDate}</span>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <span>{event.startDate} - {event.endDate}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <span>{event.startTime} - {event.endTime}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-muted-foreground" />
+                        <span>{event.venue}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-muted-foreground" />
+                        <span>{event.registeredAttendees}/{event.expectedAttendees} attendees</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span>{event.startTime} - {event.endTime}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-muted-foreground" />
-                      <span>{event.venue}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-muted-foreground" />
-                      <span>{event.registeredAttendees}/{event.expectedAttendees} attendees</span>
-                    </div>
-                  </div>
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Entry Fee:</span>
-                    <span className="text-sm font-bold text-primary">
-                      {event.entryFee === 0 ? "Free" : `Rs. ${event.entryFee}`}
-                    </span>
-                  </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Entry Fee:</span>
+                      <span className="text-sm font-bold text-primary">
+                        {event.entryFee === 0 ? "Free" : `Rs. ${event.entryFee}`}
+                      </span>
+                    </div>
 
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div
-                      className="bg-primary h-2 rounded-full"
-                      style={{
-                        width: `${(event.registeredAttendees / event.expectedAttendees) * 100}%`
-                      }}
-                    ></div>
-                  </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div
+                        className="bg-primary h-2 rounded-full"
+                        style={{
+                          width: `${(event.registeredAttendees / event.expectedAttendees) * 100}%`
+                        }}
+                      ></div>
+                    </div>
 
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleView(event)}
-                      className="flex-1"
-                    >
-                      <Eye className="w-3 h-3 mr-2" />
-                      View
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEdit(event._id)}
-                    >
-                      <Edit className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setConfirmDeleteId(event._id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleView(event)}
+                        className="flex-1"
+                      >
+                        <Eye className="w-3 h-3 mr-2" />
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEdit(event._id)}
+                      >
+                        <Edit className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setConfirmDeleteId(event._id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )))
+            }
           </div>
 
           {/* Event Details Modal */}
@@ -482,6 +473,14 @@ export default function EventsManagement() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          {/* Pagination */}
+          <div className="flex gap-2 items-center justify-end">
+            <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>
+            <span className="text-sm">Page {page}</span>
+            <Button size="sm" variant="outline" disabled={items.length < pageSize || page * pageSize >= total} onClick={() => setPage((p) => p + 1)}>Next</Button>
+            {isFetching && <span className="text-xs text-muted-foreground ml-2">Updating…</span>}
+          </div>
+
         </div>
       )}
     </>

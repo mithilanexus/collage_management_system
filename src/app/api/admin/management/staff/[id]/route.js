@@ -1,63 +1,40 @@
 import staffModel from "@/models/staff/Staff.model";
+import connectDB from "@/lib/coonectDb";
+import { ok, notFound, serverError } from "@/lib/apiResponse";
 
 export async function GET(request, { params }) {
   try {
-    const staffId = await params.id;
-    const staff = await staffModel.findOne({ _id: staffId }).lean();
-    return Response.json({
-      message: "Staff data retrieved successfully",
-      success: true,
-      data: staff,
-    });
+    await connectDB();
+    const staffId = params.id;
+    const staff = await staffModel.findById(staffId).lean();
+    if (!staff) return notFound("Staff not found");
+    return ok(staff, "Staff data retrieved successfully");
   } catch (error) {
-    return Response.json({
-      message: "Failed to retrieve staff data",
-      success: false,
-      error: error.message,
-    });
+    return serverError("Failed to retrieve staff data", error.message);
   }
 }
 
 export async function PUT(request, { params }) {
-  const req = await request.json();
   try {
-    const staffId = await params.id;
-    const staff = await staffModel.findOneAndUpdate(
-      {
-        _id: staffId,
-      },
-      req,
-      { new: true }
-    );
-    return Response.json({
-      message: "Staff updated successfully",
-      success: true,
-      data: staff,
-    });
+    await connectDB();
+    const req = await request.json();
+    const staffId = params.id;
+    const staff = await staffModel.findOneAndUpdate({ _id: staffId }, req, { new: true }).lean();
+    if (!staff) return notFound("Staff not found");
+    return ok(staff, "Staff updated successfully");
   } catch (error) {
-    return Response.json({
-      message: "Failed to update staff",
-      success: false,
-      error: error.message,
-    });
+    return serverError("Failed to update staff", error.message);
   }
 }
 
 export async function DELETE(request, { params }) {
   try {
-    const staffId = await params.id;
-    await staffModel.findOneAndDelete({
-      _id: staffId,
-    });
-    return Response.json({
-      message: "Staff deleted successfully",
-      success: true,
-    });
+    await connectDB();
+    const staffId = params.id;
+    const deleted = await staffModel.findOneAndDelete({ _id: staffId }).lean();
+    if (!deleted) return notFound("Staff not found");
+    return ok(null, "Staff deleted successfully");
   } catch (error) {
-    return Response.json({
-      message: "Failed to delete staff",
-      success: false,
-      error: error.message,
-    });
+    return serverError("Failed to delete staff", error.message);
   }
 }

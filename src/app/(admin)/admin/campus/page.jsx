@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useFacilities, useDeleteFacility } from "@/hooks/admin/campus/facilities";
 
 export default function CampusManagement() {
   const [facilities, setFacilities] = useState([]);
@@ -43,21 +44,12 @@ export default function CampusManagement() {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const router = useRouter(); // Fix: Call useRouter() correctly
 
-  const getFacilities = async () => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus`);
-      const data = await res.json();
-      setFacilities(data.data);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching facilities:', error);
-    }
-  };
-
+  const { data: facilitiesResp, isLoading: facilitiesLoading } = useFacilities({}, { keepPreviousData: true, staleTime: 60000 });
   useEffect(() => {
-    getFacilities();
-
-  }, []);
+    const list = Array.isArray(facilitiesResp) ? facilitiesResp : (facilitiesResp?.data ?? []);
+    setFacilities(list || []);
+    setLoading(!!facilitiesLoading);
+  }, [facilitiesResp, facilitiesLoading]);
 
   const handleView = (facility) => {
     setSelectedFacility(facility);
@@ -74,23 +66,15 @@ export default function CampusManagement() {
     facility.manager.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const { mutateAsync: deleteFacility } = useDeleteFacility({
+    onSuccess: () => {
+      toast.success("Facility deleted");
+    },
+    onError: (e) => toast.error(e?.message || "Failed to delete"),
+  });
   const handleDelete = async (facilityId) => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/${facilityId}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Facility deleted");
-        const updatedFacilities = facilities.filter(f => f._id !== facilityId);
-        setFacilities(updatedFacilities);
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (error) {
-      console.error("Error deleting facility:", error);
-      toast.error(error.message);
-    }
+    await deleteFacility(facilityId);
+    setFacilities((prev) => prev.filter((f) => f._id !== facilityId));
   };
 
   const getStatusColor = (status) => {

@@ -1,63 +1,40 @@
 import teacherModel from "@/models/teacher/Teacher.model";
+import connectDB from "@/lib/coonectDb";
+import { ok, notFound, serverError, created } from "@/lib/apiResponse";
 
 export async function GET(request, { params }) {
   try {
-    const teacherId = await params.id;
-    const teacher = await teacherModel.findOne({ _id: teacherId }).lean();
-    return Response.json({
-      message: "Teacher data retrieved successfully",
-      success: true,
-      data: teacher,
-    });
+    await connectDB();
+    const teacherId = params.id;
+    const teacher = await teacherModel.findById(teacherId).lean();
+    if (!teacher) return notFound("Teacher not found");
+    return ok(teacher, "Teacher data retrieved successfully");
   } catch (error) {
-    return Response.json({
-      message: "Failed to retrieve teacher data",
-      success: false,
-      error: error.message,
-    });
+    return serverError("Failed to retrieve teacher data", error.message);
   }
 }
 
 export async function PUT(request, { params }) {
-  const req = await request.json();
   try {
-    const teacherId = await params.id;
-    const teacher = await teacherModel.findOneAndUpdate(
-      {
-        _id: teacherId,
-      },
-      req,
-      { new: true }
-    );
-    return Response.json({
-      message: "Teacher updated successfully",
-      success: true,
-      data: teacher,
-    });
+    await connectDB();
+    const req = await request.json();
+    const teacherId = params.id;
+    const teacher = await teacherModel.findOneAndUpdate({ _id: teacherId }, req, { new: true }).lean();
+    if (!teacher) return notFound("Teacher not found");
+    return ok(teacher, "Teacher updated successfully");
   } catch (error) {
-    return Response.json({
-      message: "Failed to update teacher",
-      success: false,
-      error,
-    });
+    return serverError("Failed to update teacher", error.message);
   }
 }
 
 export async function DELETE(request, { params }) {
   try {
-    const teacherId = await params.id;
-    await teacherModel.findOneAndDelete({
-      _id: teacherId,
-    });
-    return Response.json({
-      message: "Teacher deleted successfully",
-      success: true,
-    });
+    await connectDB();
+    const teacherId = params.id;
+    const deleted = await teacherModel.findOneAndDelete({ _id: teacherId }).lean();
+    if (!deleted) return notFound("Teacher not found");
+    return ok(null, "Teacher deleted successfully");
   } catch (error) {
-    return Response.json({
-      message: "Failed to delete teacher",
-      success: false,
-      error,
-    });
+    return serverError("Failed to delete teacher", error.message);
   }
 }

@@ -1,4 +1,5 @@
 "use client";
+import { useCreateEvent } from "@/hooks/admin/campus/events";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -53,6 +54,7 @@ export default function AddEventPage() {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { mutateAsync: createEvent } = useCreateEvent();
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -90,21 +92,10 @@ export default function AddEventPage() {
         : [],
     };
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/events`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      console.log("Create Event payload", payload);
-      if (data.success) {
-        toast.success("Event created");
-        router.push("/admin/campus/events");
-      } else {
-        throw new Error(data.message);
-      }
+      const data = await createEvent(payload);
+      const success = data?.success !== false;
+      toast.success(success ? (data?.message || "Event created") : "Event created");
+      router.push("/admin/campus/events");
     } catch (error) {
       console.error("Error creating event:", error);
       toast.error(error.message);

@@ -23,6 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useFacility, useUpdateFacility } from "@/hooks/admin/campus/facilities";
 
 const schema = z.object({
   name: z.string().min(1, "Required"),
@@ -70,48 +71,29 @@ export default function EditFacilityPage() {
     },
   });
  
-  const getFacility = async () => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/${id}`);
-      const data = await res.json();
-      form.reset(data.data);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching facility:', error);
-      setLoading(false);
-    }
-  };
-
+  const { data: facilityResp, isLoading: loadingFacility } = useFacility(id, {});
   useEffect(() => {
-    if (id) {
-      getFacility();
+    if (!id) return;
+    if (!loadingFacility) {
+      const payload = facilityResp?.data || facilityResp;
+      if (payload) form.reset(payload);
+      setLoading(false);
     }
-  }, [id]);
+  }, [id, loadingFacility, facilityResp]);
 
+  const { mutateAsync: updateFacility } = useUpdateFacility();
   const onSubmit = async (values) => {
     const payload = {
       ...values,
       facilities: values.facilities
         ? values.facilities.split(",").map((s) => s.trim()).filter(Boolean)
         : [],
-      _id: id,
     };
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      console.log("Update Facility payload", payload);
-      if (data.success) {
-        toast.success("Facility updated");
-        router.push("/admin/campus");
-      } else {
-        throw new Error(data.message);
-      }
+      const data = await updateFacility({ id, payload });
+      const success = data?.success !== false;
+      toast.success(success ? (data?.message || "Facility updated") : "Facility updated");
+      router.push("/admin/campus");
     } catch (error) {
       console.error("Error updating facility:", error);
       toast.error(error.message);

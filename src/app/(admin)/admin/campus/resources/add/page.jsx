@@ -1,4 +1,5 @@
 "use client";
+import { useCreateResource } from "@/hooks/admin/campus/resources";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -47,6 +48,7 @@ export default function AddResourcePage() {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { mutateAsync: createResource } = useCreateResource();
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -73,21 +75,11 @@ export default function AddResourcePage() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/campus/resources`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(values),
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Resource created");
-        router.push("/admin/campus/resources");
-      }
-      else {
-        toast.error(data.message);
-      }
+      const features = values.features.split(",").map(f => f.trim());
+      const data = await createResource({ ...values, features });
+      const success = data?.success !== false;
+      toast.success(success ? (data?.message || "Resource created") : "Resource created");
+      router.push("/admin/campus/resources");
     } catch (error) {
       console.error('Error creating resource:', error);
       toast.error("Error creating resource");
