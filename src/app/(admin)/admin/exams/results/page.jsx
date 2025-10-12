@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,14 +25,17 @@ import {
   Users, 
   BookOpen,
   Download,
-  Upload
+  Upload,
+  Megaphone
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useExamSchedules, useExamResults, useSaveExamResult } from "@/hooks/admin/exams";
 import { useStudents } from "@/hooks/admin/management/useStudentQueries";
+import { useAnnouncements } from "@/hooks/admin/communications/announcements";
 
 export default function ExamResults() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [results, setResults] = useState([]);
   const [students, setStudents] = useState([]);
@@ -119,6 +123,7 @@ export default function ExamResults() {
     return { exams: dummyExams, students: dummyStudents, results: dummyResults };
   };
 
+
   const qc = useQueryClient();
 
   // Exams list via schedules
@@ -132,6 +137,13 @@ export default function ExamResults() {
   // Results list
   const { data: resultsDataResp, isLoading: loadingResults } = useExamResults({}, {});
   const resultsData = resultsDataResp?.items ?? resultsDataResp?.data?.items ?? (Array.isArray(resultsDataResp) ? resultsDataResp : []);
+
+  // Exam Result Notices list (filter on client by category)
+  const { data: allAnnouncementsResp } = useAnnouncements({ page: 1, pageSize: 100, search: "" }, { staleTime: 60_000 });
+  const allAnnouncements = allAnnouncementsResp?.items ?? allAnnouncementsResp?.data ?? allAnnouncementsResp ?? [];
+  const examNotices = Array.isArray(allAnnouncements)
+    ? allAnnouncements.filter(a => (a.category || "").toLowerCase().includes("exam"))
+    : [];
 
   // Sync loading flag
   useEffect(() => {
@@ -219,6 +231,8 @@ export default function ExamResults() {
     return exams.find(e => e._id === examId) || {};
   };
 
+  // no-op
+
   const getGradeColor = (grade) => {
     const colors = {
       "A+": "bg-green-100 text-green-800",
@@ -257,6 +271,23 @@ export default function ExamResults() {
     saveResultMutate({ payload, method });
   };
 
+  // Create publish notice (announcement) CTA
+  const handleCreatePublishNotice = () => {
+    const examId = selectedExam !== "all" ? selectedExam : (exams[0]?._id || "");
+    const exam = getExamInfo(examId);
+    const examName = exam?.examName || "the recent exam";
+    const params = new URLSearchParams({
+      title: `Exam Results Published - ${examName}`,
+      content: `The exam results for ${examName} have been published. Please log in to the student portal to view detailed results.`,
+      category: "Academic",
+      priority: "High",
+      status: "Published",
+      targetAudience: "All Students",
+      isPinned: "true",
+    });
+    router.push(`/admin/communications/announcements/add?${params.toString()}`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Breadcrumbs */}
@@ -275,18 +306,40 @@ export default function ExamResults() {
             <GraduationCap className="w-6 h-6 text-primary" />
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Exam Results</h1>
           </div>
-          <p className="text-muted-foreground">Manage and track primary level student exam results.</p>
+          <p className="text-muted-foreground">Manage and track student exam results. Publish notices when results are released.</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="flex items-center gap-2">
-            <Upload className="w-4 h-4" />
-            Import Results
-          </Button>
-          <Button onClick={handleAddResult} className="flex items-center gap-2 hover:bg-primary/90 transition-colors">
-            <Plus className="w-4 h-4" />
-            Add Result
-          </Button>
-        </div>
+        <div></div>
+      </div>
+
+      
+
+      {/* Exam Result Notices */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Exam Result Notices</h2>
+        <Button onClick={() => router.push("/admin/exams/results/notices/add")} className="flex items-center gap-2">
+          <Megaphone className="w-4 h-4" />
+          Add Notice
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {examNotices.length === 0 ? (
+          <div className="col-span-full text-muted-foreground">No exam result notices yet.</div>
+        ) : (
+          examNotices.map((n) => (
+            <Card key={n._id} className="hover:shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">{n.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground line-clamp-3">{n.content}</p>
+                <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{n.status}</span>
+                  <Button size="sm" variant="outline" onClick={() => router.push(`/admin/exams/results/notices/${n._id}/edit`)}>Edit</Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
 
       {/* Statistics Cards */}

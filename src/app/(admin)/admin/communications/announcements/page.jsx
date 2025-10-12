@@ -21,6 +21,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAnnouncements } from "@/hooks/admin/management";
+import { useDeleteAnnouncement } from "@/hooks/admin/communications/announcements";
 
 
 
@@ -48,23 +49,16 @@ export default function AnnouncementsManagement() {
     router.push(`/admin/communications/announcements/${announcementId}/edit`);
   };
 
+  const { mutateAsync: deleteAnnouncement } = useDeleteAnnouncement({
+    onSuccess: async (data) => {
+      const success = data?.success !== false;
+      toast.success((success && (data?.message || "Announcement deleted")) || "Announcement deleted");
+      await qc.invalidateQueries({ queryKey: ["admin", "announcements", {}] });
+    },
+    onError: (e) => toast.error(e?.message || "Failed to delete"),
+  });
   const handleDelete = async (announcementId) => {
-    try {
-      const response = await fetch(`/api/admin/communications/announcements/${announcementId}`, {
-        method: "DELETE",
-      });
-      const data = await response.json();
-      if (data.success) {
-        // Best-effort refresh
-        await qc.invalidateQueries({ queryKey: ["admin", "announcements"] });
-        toast.success(data.message);
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (error) {
-      console.error("Error deleting announcement:", error);
-      toast.error(error.message);
-    }
+    await deleteAnnouncement(announcementId);
   };
 
   // Pin toggle can be implemented via a mutation hitting an endpoint if needed

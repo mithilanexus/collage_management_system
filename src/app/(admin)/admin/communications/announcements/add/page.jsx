@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { toast } from "sonner";
 import { Megaphone, ArrowLeft } from "lucide-react";
+import { useCreateAnnouncement } from "@/hooks/admin/communications/announcements";
 
 const schema = z.object({
   title: z.string().min(1),
@@ -30,6 +31,8 @@ const schema = z.object({
 
 export default function AddAnnouncementPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { mutateAsync: createAnnouncement } = useCreateAnnouncement();
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -47,22 +50,33 @@ export default function AddAnnouncementPage() {
     },
   });
 
+  // Pre-fill from query params if present
+  const qp = Object.fromEntries(searchParams?.entries?.() || []);
+  const prefill = {
+    title: qp.title || undefined,
+    content: qp.content || undefined,
+    category: qp.category || undefined,
+    priority: qp.priority || undefined,
+    targetAudience: qp.targetAudience || undefined,
+    publishDate: qp.publishDate || undefined,
+    expiryDate: qp.expiryDate || undefined,
+    status: qp.status || undefined,
+    author: qp.author || undefined,
+    isPinned: typeof qp.isPinned !== 'undefined' ? qp.isPinned === 'true' : undefined,
+    image: qp.image || undefined,
+  };
+  const hasPrefill = Object.values(prefill).some((v) => typeof v !== 'undefined' && v !== "");
+  if (hasPrefill) {
+    // Merge prefill over current defaults only once at render time
+    form.reset({ ...form.getValues(), ...Object.fromEntries(Object.entries(prefill).filter(([,v]) => typeof v !== 'undefined')) });
+  }
+
   const onSubmit = async (values) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/communications/announcements`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(values),
-      });
-      const data = await response.json();
-      if (data.success) {
-        toast.success(data.message);
-        router.push("/admin/communications/announcements");
-      } else {
-        throw new Error(data.message);
-      }
+      const data = await createAnnouncement(values);
+      const success = data?.success !== false;
+      toast.success(success ? (data?.message || "Announcement created") : "Announcement created");
+      router.push("/admin/communications/announcements");
     } catch (error) {
       console.error("Error creating announcement:", error);
       toast.error(error.message);

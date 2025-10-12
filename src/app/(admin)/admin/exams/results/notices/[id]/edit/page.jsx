@@ -19,54 +19,67 @@ import { useAnnouncement, useUpdateAnnouncement } from "@/hooks/admin/communicat
 const schema = z.object({
   title: z.string().min(1),
   content: z.string().min(1),
-  category: z.string().min(1),
-  priority: z.enum(["High", "Medium", "Low"]).default("Medium"),
   targetAudience: z.string().min(1),
-  publishDate: z.string().min(1),
-  expiryDate: z.string().optional(),
-  status: z.enum(["Draft", "Published", "Expired"]).default("Draft"),
-  author: z.string().min(1),
-  isPinned: z.boolean().default(false),
-  image: z.string().optional(),
+  priority: z.enum(["High", "Medium", "Low"]).default("High"),
+  status: z.enum(["Draft", "Published", "Expired"]).default("Published"),
+  isPinned: z.boolean().default(true),
 });
 
-export default function EditAnnouncementPage() {
-  const { announcementId } = useParams();
+export default function EditExamResultNoticePage() {
+  const { id } = useParams();
   const router = useRouter();
+  const { data: announcementResp, isLoading } = useAnnouncement(id, {});
+  const { mutateAsync: updateAnnouncement } = useUpdateAnnouncement();
+
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
       title: "",
       content: "",
-      category: "Academic",
-      priority: "Medium",
       targetAudience: "All Students",
-      publishDate: "",
-      expiryDate: "",
-      status: "Draft",
-      author: "",
-      isPinned: false,
-      image: "",
+      priority: "High",
+      status: "Published",
+      isPinned: true,
     },
   });
-  const { data: announcementResp, isLoading: loadingAnnouncement } = useAnnouncement(announcementId, {});
+
   useEffect(() => {
-    if (!announcementId) return;
-    if (!loadingAnnouncement) {
-      const payload = announcementResp?.data || announcementResp;
-      if (payload) form.reset(payload);
+    if (!isLoading) {
+      const a = announcementResp?.data || announcementResp || {};
+      if (a && a._id) {
+        form.reset({
+          title: a.title || "",
+          content: a.content || "",
+          targetAudience: a.targetAudience || "All Students",
+          priority: a.priority || "High",
+          status: a.status || "Published",
+          isPinned: Boolean(a.isPinned),
+        });
+      }
     }
-  }, [announcementId, loadingAnnouncement, announcementResp]);
-  const { mutateAsync: updateAnnouncement } = useUpdateAnnouncement();
+  }, [isLoading, announcementResp]);
+
   const onSubmit = async (values) => {
     try {
-      const data = await updateAnnouncement({ id: announcementId, payload: values });
+      const payload = {
+        title: values.title,
+        content: values.content,
+        category: "Exam Result",
+        priority: values.priority,
+        targetAudience: values.targetAudience,
+        publishDate: announcementResp?.publishDate || new Date().toISOString().slice(0, 10),
+        expiryDate: announcementResp?.expiryDate || "",
+        status: values.status,
+        author: announcementResp?.author || "Exam Office",
+        isPinned: values.isPinned,
+        image: announcementResp?.image || "",
+      };
+      const data = await updateAnnouncement({ id, payload });
       const success = data?.success !== false;
-      toast.success(success ? (data?.message || "Announcement updated") : "Announcement updated");
-      router.push("/admin/communications/announcements");
+      toast.success(success ? (data?.message || "Notice updated") : "Notice updated");
+      router.push("/admin/exams/results");
     } catch (error) {
-      console.error("Error updating announcement:", error);
-      toast.error(error.message);
+      toast.error(error?.message || "Failed to update notice");
     }
   };
 
@@ -75,7 +88,7 @@ export default function EditAnnouncementPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Megaphone className="w-5 h-5" />
-          <h1 className="text-2xl sm:text-3xl font-bold">Edit Announcement</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Edit Exam Result Notice</h1>
         </div>
         <Button variant="outline" onClick={() => router.back()}>
           <ArrowLeft className="w-4 h-4 mr-2" /> Back
@@ -84,7 +97,7 @@ export default function EditAnnouncementPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Announcement Details</CardTitle>
+          <CardTitle>Notice Details</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -97,20 +110,10 @@ export default function EditAnnouncementPage() {
                 </FormItem>
               )} />
 
-              <FormField control={form.control} name="category" render={({ field }) => (
+              <FormField control={form.control} name="targetAudience" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Academic">Academic</SelectItem>
-                      <SelectItem value="Library">Library</SelectItem>
-                      <SelectItem value="Sports">Sports</SelectItem>
-                      <SelectItem value="Finance">Finance</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Target Audience</FormLabel>
+                  <FormControl><Input {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -132,28 +135,6 @@ export default function EditAnnouncementPage() {
                 </FormItem>
               )} />
 
-              {([
-                { name: "targetAudience", label: "Target Audience" },
-                { name: "author", label: "Author" },
-                { name: "publishDate", label: "Publish Date", type: "date" },
-                { name: "expiryDate", label: "Expiry Date", type: "date" },
-                { name: "image", label: "Image URL", full: true },
-              ]).map((cfg) => (
-                <FormField key={cfg.name}
-                  control={form.control}
-                  name={cfg.name}
-                  render={({ field }) => (
-                    <FormItem className={cfg.full ? "md:col-span-2" : undefined}>
-                      <FormLabel>{cfg.label}</FormLabel>
-                      <FormControl>
-                        <Input type={cfg.type || "text"} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ))}
-
               <FormField control={form.control} name="status" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Status</FormLabel>
@@ -162,8 +143,8 @@ export default function EditAnnouncementPage() {
                       <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Draft">Draft</SelectItem>
                       <SelectItem value="Published">Published</SelectItem>
+                      <SelectItem value="Draft">Draft</SelectItem>
                       <SelectItem value="Expired">Expired</SelectItem>
                     </SelectContent>
                   </Select>
@@ -189,8 +170,8 @@ export default function EditAnnouncementPage() {
               )} />
 
               <div className="md:col-span-2 flex items-center justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => router.push("/admin/communications/announcements")}>Cancel</Button>
-                <Button type="submit">Update</Button>
+                <Button type="button" variant="outline" onClick={() => router.push("/admin/exams/results")}>Cancel</Button>
+                <Button type="submit">Update Notice</Button>
               </div>
             </form>
           </Form>
